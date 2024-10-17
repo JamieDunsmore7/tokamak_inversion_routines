@@ -10,7 +10,7 @@ This is the inversion routine that Tomas sent Andres recently (with backprojecti
 This is a version of the inversion that I've been using for C-Mod. It contains a number of extra keyword arguments (some specific to C-Mod):
 
 - calib_factor: a calibration factor that can be applied to the raw data
-- apply offsets: some ad-hoc offset calculations (e.g WB4LY camera sometimes has a dead-channel which only picks up dark current and can therefore be subtracted from other channels to reduce noise
+- apply offsets: some ad-hoc offset calculations (e.g WB4LY camera sometimes has a dead-channel which only picks up dark current and can therefore be subtracted from other channels to reduce noise)
 - t_window: if only a certain part of the shot needs to be inverted
 - smooth_brightness_in_time: option to use a savitzky-golay filter to smooth the raw brightness signals in time before inverting.
 
