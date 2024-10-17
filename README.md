@@ -19,6 +19,8 @@ This is a version of the inversion that I've been using for C-Mod. It contains a
 - [ ] Check backprojections for the shot that Jamie send Steven
 - [ ] Work out what dL is doing in the inversions
 - [ ] Work out how to invert for non-horizontal views (does it even make a difference??)
+- [ ] Check Jamie's inversion is consistent with Tomas'
 - [ ] Merge Jamie's inversion with Tomas' inversion (probably doesn't need to be two separate files).
+
 
 
