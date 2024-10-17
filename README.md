@@ -1,11 +1,11 @@
 Repo containing common inversion routines for Ly-alpha data on Alcator C-Mod and Balmer-alpha data on MAST-U.
 
 
-# Tomas_inversion.py
+# Tomas_inversion_CMOD.py
 
 This is the inversion routine that Tomas sent Andres recently (with backprojection fixed and option to change the regularisation). I tidied the GUI a little bit and also added showing the GUI as an optional keyword argument.
 
-# Jamie_inversion.py
+# Jamie_inversion_CMOD.py
 
 This is a version of the inversion that I've been using for C-Mod. It contains a number of extra keyword arguments (some specific to C-Mod):
 
