@@ -88,10 +88,13 @@ class LLAMA_tomography():
         self.R_grid = np.linspace(self.lfs_min,self.lfs_max,self.nr)
         self.R_grid_b = (self.R_grid[1:]+ self.R_grid[:-1])/2
 
- 
+
+        # self.R_grid is an evenly spaced grid for the inversion to be performed on, starting at the minimum value of R_tg and ending at the specified inversion zero, r_end.
+        # R_tg are the input tangency radii. R_grid and R_tg are both 1D arrays.
+        # dL gives the distance between all R_grid points ALONG THE LINE-OF-SIGHT for each chord.
         self.dL = 2*(np.sqrt(np.maximum((self.R_grid[1:])**2-self.R_tg[:,None]**2,0))       
                     -np.sqrt(np.maximum( self.R_grid[:-1]**2-self.R_tg[:,None]**2,0)))
-        
+                
         #evaluate back projection for the every point of the grid
         self.dL_grid = 2*(np.sqrt(np.maximum((self.R_grid[1:])**2-self.R_grid_b[:,None]**2,0))       
                          -np.sqrt(np.maximum( self.R_grid[:-1]**2-self.R_grid_b[:,None]**2,0)))
@@ -129,8 +132,8 @@ class LLAMA_tomography():
                 #essentially we are trading the noise in channels 3,4,5 etc. for the noise in channel 1 (which is much reduced compared to the others.)
                 offset_channel_values = raw_data[:,0]
                 average_delta = np.mean(raw_data[:,3]) / np.mean(raw_data[:,1]) 
-                offset = raw_data[:,3] - (raw_data[:,1] * average_delta) #resulting offset
-                array_2d = np.repeat(offset[:, np.newaxis], len(raw_data[0]), axis=1)
+                channel_offset = raw_data[:,3] - (raw_data[:,1] * average_delta) #resulting offset
+                array_2d = np.repeat(channel_offset[:, np.newaxis], len(raw_data[0]), axis=1)
                 exclude_columns = [0, 1, 2, 8, 10, 15, 19]  # don't apply to dead channels and to the channels with different noise (1 and 10)
 
                 array_2d[:,exclude_columns] = 0
@@ -170,8 +173,6 @@ class LLAMA_tomography():
         error_low = np.hypot(self.calfErr * data_low, np.std(data_low[:offset],0)) 
 
 
-      
-        
         #add offset to all channels such that the outermost is above zero
         # last_good_ind = 0        
         # option to offset data if it reads negative values
@@ -186,7 +187,7 @@ class LLAMA_tomography():
         
         # make sure that zero value is within errorbars when data are negative
         error_low = np.maximum(error_low, -data_low)
-        
+
         ## cmod mod: see where the error is 0 and replace to avoid dividing by 0
         error_low[error_low == 0] = np.inf
         
@@ -429,8 +430,7 @@ class LLAMA_tomography():
         ax[0].set_xlim(self.lfs_min-.01, self.lfs_max+.01)
 
         ax[1].set_ylim(0, np.percentile(self.y.max(1),95)*1.1)
-        ax[0].set_ylim(0, np.percentile((self.data+self.err).max(1),95)*1.1)
-
+        ax[0].set_ylim(0, np.percentile((self.data).max(1),95)*1.1)
         ax[1].set_xlabel('R [m]')
         ax[0].set_xlabel('$R_{tang}$ [m]')
         ax[1].set_ylabel('Emissivity [W/m$^3$]')
@@ -450,7 +450,7 @@ class LLAMA_tomography():
             retro.set_data(r, self.backprojection_grid[it])
             retro2.set_data(self.R_tg, self.backprojection[it])
             
-            title.set_text(rf'#{self.shot},  {self.tvec[it]:.3f}s, $\chi_{{reduced}}^2$ = { self.chi2[it]:.2f}  $\gamma$ = {self.gamma[it] :.2f}')
+            title.set_text(rf'#{self.shot},  {self.system}, {self.tvec[it]:.3f}s, $\chi_{{reduced}}^2$ = { self.chi2[it]:.2f}  $\gamma$ = {self.gamma[it] :.2f}')
    
             f.canvas.draw_idle()
 
@@ -494,12 +494,13 @@ class LLAMA_tomography():
         plt.show()
 
 
-def tomoCMOD(shot,system,r_end=0.93,sys_err=5, calib_factor=1, apply_offsets=None, t_window = None, smooth_brightness_in_time = False, n_blocks=None, show_reconstruction=False):
+def tomoCMOD(shot,system, r_end=0.93, sys_err=5, reg = 0, calib_factor=1, apply_offsets=None, t_window = None, smooth_brightness_in_time = False, n_blocks=None, show_reconstruction=False):
     '''
     shot (int): CMOD shot number
     system (str): 'LYMID' or 'WB1LY' or 'WB4LY'
     r_end (float): the inversion needs a zero. This should be an R (major radius) value where we would expect the emission to be zero (e.g at the wall).
     sys_err (float): systematic error on raw brightness points in percent. Default is 5%
+    reg (float): regularisation value for the inversion (between 0 and 1). This determines how smooth the inversion is. NOTE: recommended to plot with a few different values of reg to understand how it affects the inversion.
     calib_factor (float): calibration factor to adjust for diode degradation. For LYMID, 1 in 2007, 1/0.8 in 2008 and 1/0.32 in 2009 is recommended.
     apply_offsets (bool): apply offsets to the brightness data before inverting. Default is False. NOTE: these offsets are pretty ad-hoc and raw signals (time-traces of each channel) should be checked before applying them.
     t_window (s): two-element list containing the time window to invert. Default is None, which means the entire shot is inverted.
@@ -515,7 +516,7 @@ def tomoCMOD(shot,system,r_end=0.93,sys_err=5, calib_factor=1, apply_offsets=Non
     tomo.load_data(calib_factor=calib_factor, apply_offsets=apply_offsets, t_window=t_window, smooth_brightness_in_time=smooth_brightness_in_time)
     if n_blocks is None:
         n_blocks = len(tomo.tvec)
-    tomo.calc_tomo(n_blocks=n_blocks)
+    tomo.calc_tomo(n_blocks=n_blocks, reg_value=reg)
 
     if show_reconstruction:
         tomo.show_reconstruction()
@@ -525,9 +526,11 @@ def tomoCMOD(shot,system,r_end=0.93,sys_err=5, calib_factor=1, apply_offsets=Non
 
 
 
-
 #if __name__ == "__main__":
 #    tomo = tomoCMOD(None,None,r_end=0.93,sys_err=5,n_blocks=None)
 
 
-#tomo = tomoCMOD(shot=1070511010,system='LYMID',r_end=0.93,sys_err=5)
+#tomo = tomoCMOD(shot=1070511010,system='LYMID',r_end=0.93,sys_err=5, reg=0, show_reconstruction=True)
+
+tomo = tomoCMOD(shot=1091210027,system='WB4LY',r_end=0.84,sys_err=5, apply_offsets=True, show_reconstruction=False)
+
