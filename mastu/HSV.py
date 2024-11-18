@@ -3,15 +3,16 @@ import cv2
 import numpy as np
 import pyuda
 client = pyuda.Client()
+from scipy.special import ndtr
 
 
 def findNearest(arr, val):
     return np.abs(arr-val).argmin()
 
 
-def get(shotn, trange=[-1.,-1.], tind=None, I=1024, J=1024):
+def get(shotn, trange=[-1.,-1.], tind=None):
     if tind is not None:
-        return getSingle(shotn, tind, I=I, J=J)
+        return getSingle(shotn, tind)
     
     data = client.get_images('rba', shotn)
     # windowJ = slice(data.top, data.bottom + 1)
@@ -38,7 +39,7 @@ def get(shotn, trange=[-1.,-1.], tind=None, I=1024, J=1024):
     return frames[:,::-1,:], time
 
 
-def getSingle(shotn, tind, I=1024, J=1024):
+def getSingle(shotn, tind):
     data = client.get_images('rba', shotn, frame_number=tind)
     # windowJ = slice(data.top, data.bottom + 1)
     # windowI = slice(data.left, data.right + 1)
@@ -58,13 +59,50 @@ def getVectors(calibFile):
     pupil = calib.get_pupilpos()
     
     return los, pupil
-    
 
-def makeImage(shotn, tind, savePath='/home/sthoma/calcam/images/', I=1024, J=1024):
-    frame, _ = getSingle(shotn, tind, I=I, J=J)
+
+def makeImage(shotn, tind, savePath='/home/sthoma/calcam/images/'):
+    frame, _ = getSingle(shotn, tind)
     
     file = 'image_{}_{}.png'.format(shotn, tind)
     cv2.imwrite(savePath + file, frame)
     return
+
+
+def vignetteFunction(xy, x0, y0, wx, wy, shape, amp, offset):
+    x, y = xy
+    z = np.sqrt(((x - x0) / wx) ** 2 + ((y - y0) / wy) ** 2)
+    ### this is a divide by 1000, not for changing units but to remove a 
+    ### useless fit parameter. See the testing calibration jupyter notebooks
+    g = np.exp(-0.5 * (z * 1e-3)**2)
+    f = ndtr((z - 1.) / shape)
+    output = amp * g * (1. - f) + offset
+    return output.ravel()
+
+
+def vignette(x0=0, x1=1023, dx=1, y0=0, y1=1023, dy=1, xc=519.195, yc=500.687, 
+             wx=140.377, wy=140.257, shape=0.19405, amp=152.067, offset=121.7288):
+    x = np.arange(x0, x1+dx, dx)
+    y = np.arange(y0, y1+dy, dy)
+    xx, yy = np.meshgrid(x, y)
+    vignFn = vignetteFunction((xx, yy), xc, yc, wx, wy, shape, amp, offset)
+    return vignFn.reshape(xx.shape)
+
+
+def getWindow(shotn):
+    rba = client.get_images('rba', shotn, frame_number=0)
+    I0 = rba.top
+    I1 = rba.bottom
+    J0 = rba.left
+    J1 = rba.right
+    return I0, I1, J0, J1
+
+
+def transform(vignFn, shotn):
+    I0, I1, J0, J1 = getWindow(shotn)
+    window = (slice(I0, I1+1), slice(J0, J1+1))
+    vignFn = vignFn[window]
+    return vignFn.T[:,::-1]
+
 
 #

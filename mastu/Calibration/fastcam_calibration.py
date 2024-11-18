@@ -29,10 +29,10 @@ def hsv_cal_1d(z, sigma, shape):
     f = ncdf(z, 1, shape)
     return g * (1 - f)
 
-def hsv_cal_2d(x, y, params):
-    x0, y0, wx, wy, sigma, shape, amp, offset = params
-    z = sqrt(((x - x0) / wx) ** 2 + ((y - y0) / wy) ** 2)
-    return amp * hsv_cal_1d(z, sigma, shape) + offset
+# def hsv_cal_2d(x, y, params):
+#     x0, y0, wx, wy, sigma, shape, amp, offset = params
+#     z = sqrt(((x - x0) / wx) ** 2 + ((y - y0) / wy) ** 2)
+#     return amp * hsv_cal_1d(z, sigma, shape) + offset
 
 def hsv_cal_2d_fit(xy, x0, y0, wx, wy, sigma, shape, amp, offset):
     x, y = xy
@@ -62,7 +62,7 @@ def fit_image(img):
     p0 = [0.5*img_shape[0], 0.5*img_shape[1], 150, 150, 300, 0.2, max(img), min(img)]
     
     opt, _ = optimize.curve_fit(hsv_cal_2d_fit, (xgrid, ygrid), img.ravel(), p0)
-    
+    # opt = (x0, y0, wx, wy, sigma, shape, amp, offset)
     imgfit = reshape(hsv_cal_2d_fit((xgrid, ygrid), *opt), shape(img))
     
     residual = mean(abs(imgfit - img))
@@ -196,6 +196,8 @@ if __name__ == '__main__':
     phot_flux = zeros(len(img_files))
     
     fit_results = zeros((len(img_files),8))
+    residuals = zeros(len(img_files))
+    fit_frames = zeros(((len(img_files),1024,1024)))
     exposure_times = zeros(len(img_files))
     peak_signal = []
     background = []
@@ -211,9 +213,11 @@ if __name__ == '__main__':
         
         exposure_times[i] = exposure_time
         
-        fit_result = fit_image(img)
+        fit_result = fit_image(img) # fits a 2D gaussian basically
         
         fit_results[i,:] = fit_result[0]
+        residuals[i] = fit_result[1]
+        fit_frames[i,:,:] = fit_result[2]
         
         # calculate the photon energy
         wl = 656.0E-9
@@ -261,3 +265,4 @@ if __name__ == '__main__':
     
     calib_factor_phot = 1.0 / calib_fit_phot[0]
     
+    plt.show()
