@@ -1,0 +1,20 @@
+{
+    "shotn": 49091,
+    "Rzfile": "/home/sthoma/tokamak_inversion_routines/mastu/rba_viewing.npz",
+    "I0": 260,
+    "I1": 261,
+    "J0": 53,
+    "J1": 215,
+    "tind": 500,
+    "dtind": 5,
+    "tend": 570,
+
+
+    "nrMult": 2.5,
+    "rEnd": 1.8,
+    "sysErr": 5,
+    "nFisher" = 4,
+    "regGuess": 0.7,
+    "regMin": 0.4
+    
+}
