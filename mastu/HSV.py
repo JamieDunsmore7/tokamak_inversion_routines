@@ -114,19 +114,8 @@ def transform(vignFn, shotn):
     return vignFn.T[:,::-1]
 
 
-# def prepBackground(raw, dSlice, goodChans, flipBool, rEnd):
-#     background = np.mean(raw[dSlice], axis=-1, keepdims=True)[0]
-#     background = background[goodChans,:]
-#     if flipBool:
-#         background = np.flip(background, axis=0)
-#     if rEnd:
-#         background = np.insert(
-#         background, background.shape[0], 0., axis=0
-#         )
-#     return background.T
-
-
 def prepData(rawData, dSlice, goodChans, flipBool, rEnd, tend, sysErr=5.):
+    ### preparing data for the inversion routine
     ### raw should be in the shape (nz, nR, nt)
     data = rawData[dSlice][0] # remove z axis so it's 2D
     data = data[goodChans,:].T
@@ -157,49 +146,6 @@ def prepData(rawData, dSlice, goodChans, flipBool, rEnd, tend, sysErr=5.):
     return data, err, nT, nR
 
 
-def prepData0(rawData, dSlice, goodChans, flipBool, rEnd, tend, sysErr=5.):
-    ### raw should be in the shape (nz, nR, nt)
-    data = rawData[dSlice][0] # remove z axis so it's 2D
-    data = data[goodChans,:].T
-    if flipBool:
-        data = np.flip(data, axis=1)
-    if rEnd:
-        data = np.insert(data, data.shape[1], 0., axis=1)
-    data = np.mean(data[495:505,:], axis=0, keepdims=True)
-    dataLow = data.reshape(-1,1,data.shape[1]).mean(1)
-    errLow = np.zeros_like(dataLow)
-    dataLow -= dataLow[:,[-1]]
-    errLow = np.maximum(errLow, -dataLow)
-    nT, nR = data.shape
-    calf, calfErr = makeCal(nR, sysErr=sysErr)
-    data = dataLow * calf
-    err = np.sqrt(
-        (errLow * calf)**2 + (dataLow * calfErr)**2
-    )
-    return data, err, nT, nR
-
-
-# def offset(data, background, nR, sysErr=5.):
-#     dataLow = data - background
-#     errLow = np.std(dataLow, axis=0, keepdims=True) / 3.
-#     ind1 = np.r_[1,0:nR-1]
-#     ind2 = np.r_[1:nR,nR-2]
-#     errLow += np.std(
-#         np.diff(
-#             dataLow - (dataLow[:,ind1] + dataLow[:,ind2]) / 2., axis=0
-#         ), axis=0
-#     ) / np.sqrt(2.)
-#     dataLow -= dataLow[:,[-1]]
-#     errLow = np.maximum(errLow, -dataLow)
-    
-#     calf, calfErr = makeCal(nR, sysErr=sysErr)
-#     data = dataLow * calf
-#     err = np.sqrt(
-#         (errLow * calf)**2 + (dataLow * calfErr)**2
-#     )
-#     return data, err
-
-
 def makeCal(nR, sysErr=5.):
     # TODO: needs updating with proper calibration
     calf = np.ones(nR)
@@ -207,8 +153,29 @@ def makeCal(nR, sysErr=5.):
     return calf, calfErr
 
 
+def makeRadialAverage(data, raverage, rEnd):
+    ### assumes data is 2D with shape (nT, nR)
+    data2 = np.zeros_like(data).astype(float)
+    kernel = np.ones(raverage).astype(float) / raverage
+    
+    if rEnd:
+        rSlice = slice(0, data.shape[1]-1)
+    else:
+        rSlice = slice(0, data.shape[1])
+    
+    for i in range(0, data.shape[0]):
+        data2[i,rSlice] = np.convolve(data[i,rSlice], kernel, mode='same')
+    return data2
+        
 
-
+def makeTimeAverage(data, taverage):
+    ### assumes data is 2D with shape (nT, nR)
+    data2 = np.zeros_like(data).astype(float)
+    kernel = np.ones(taverage).astype(float) / taverage
+    
+    for i in range(0, data.shape[1]):
+        data2[:,i] = np.convolve(data[:,i], kernel, mode='same')
+    return data2
 
 
 

@@ -2,10 +2,11 @@
 
 import json
 import numpy as np
+from scipy.linalg import eigh, solve_banded
 
 
 def FindMin(F, x0, dx0, prod, S, U, tol=0.01):
-    #stupid but robust minimum searching algorithm.
+    ### stupid but robust minimum searching algorithm.
     fg = F(x0, prod, S, U)
     while abs(dx0) > tol:
         fg2 = F(x0 + dx0, prod, S, U)
@@ -19,13 +20,108 @@ def FindMin(F, x0, dx0, prod, S, U, tol=0.01):
 
 
 def GCV(g, prod, S, U):
-    #generalized crossvalidation
+    ### generalized crossvalidation
     w = 1. / (1. + np.exp(g) / S**2)
     ndets = len(prod)
     return (np.sum((((w - 1) * prod))**2) + 1) / ndets / (1 - np.mean(w))**2
 
 
+def inversion(data, err, dL, scale, nGrid, Q, D, indLos, 
+              indSpace, nFisher=4, regGuess=0.7, regMin=0.4):
+    ### one single iteration of the inversion
+    ### find zeros, as we're dividing by it
+    errZinds = np.where(np.isclose(err, 0.))
+    T = dL / err[:,None] * scale
+    mean_d = data / err
+    ### replace infs and NaNs
+    T[errZinds] = 0.
+    mean_d[errZinds] = 0.
+    
+    ### empty array
+    W = np.ones(nGrid-1)
+    
+    ### iterate over the nFisher asked for
+    for f in range(nFisher):
+        
+        ### multiply tridiagonal regularisation operator 
+        ### by a diagonal weight matrix W
+        WD = np.copy(D)
+        ### seems redundent, as W is all ones
+        WD[0,1:] *= W[:-1]
+        WD[1] *= W
+        WD[2,:-1] *= W[1:]
+        
+        ### transpose the band matrix
+        DTW = np.copy(WD)
+        DTW[0,1:], DTW[2,:-1] = WD[2,:-1], WD[0,1:]
+        
+        ### solve Tikhonov regularization (optimised for speed)
+        H = solve_banded(
+            (1, 1), DTW, T[indLos,indSpace].T, 
+            overwrite_ab=True, check_finite=False
+        )
+        ### fast method to calculate U, S, V = svd(H.T) of rectangular matrix
+        LL = np.dot(H.T, H)
+        ### also from scipy
+        S2, U = eigh(LL, overwrite_a=True, check_finite=False, lower=True)
+        ### singular values S can be negative due to numerical uncertainty
+        S2 = np.maximum(S2, 1)
+        ###
+        mean_p = np.dot(mean_d[indLos], U)
+        ### guess for regularisation - estimate quantile of log(S^2)
+        g0 = np.interp(regGuess, Q, np.log(S2))
+        
+        if f == (nFisher-1):
+            ### last step - find optimal regularisation
+            S = np.sqrt(S2)
+            
+            g0, log_fg2 = FindMin(GCV, g0, 1, mean_p, S, U.T) # slowest step
+            ### avoid too small regularisation when min of GCV is not found
+            
+            gmin = np.interp(regMin, Q, np.log(S2))
+            g0 = max(g0, gmin)
+            
+            ### filtering factor
+            w = 1. / (1. + np.exp(g0) / S2)
+
+            V = np.dot(H, U / S)
+            V = solve_banded(
+                (1,1), WD, V, overwrite_ab=True, 
+                overwrite_b=True, check_finite=False
+            )
+            
+        else:
+            ### filtering factor
+            w = 1. / (1. + np.exp(g0) / S2)
+            
+            ### calcualte y without evaluatin v explicitely
+            Y = np.dot(H, np.dot(U / S2, w * mean_p))
+            ### final inversion of mean solution , reconstruction
+            Y = solve_banded(
+                (1,1), WD, Y, overwrite_ab=True, 
+                overwrite_b=True, check_finite=False
+            )
+
+            ### weight matrix for the next iteration
+            W = 1. / np.maximum(Y, 1e-10)**.5
+        
+    ### 
+    p = np.dot(mean_d[indLos], U)
+    Y = np.dot((w / S) * p, V.T)
+    
+    backprojection = fit = np.dot(p*w, U.T) * err
+    chi2 = np.sum((mean_d[indLos] - fit)**2) / len(fit)
+    gamma = np.interp(g0, np.log(S2), Q)
+    
+    # y[i,indSpace] = Y
+    yErr = np.sqrt(np.dot(V**2, (w / S)**2))
+    # backprojection[i] *= err[i]
+    
+    return Y, yErr, backprojection, chi2, gamma
+
+
 def loadDict(dictFile):
+    ### load the dictionary with parameters to run the script
     with open(dictFile) as f:
         textDict = f.read()
     inputDict = json.loads(textDict)
@@ -42,7 +138,8 @@ def makeGrid(R, nGrid):
     Rmin = R[0]
     Rmax = R[-1]
     Rgrid = np.linspace(Rmin, Rmax, nGrid)
-    return Rgrid
+    RgridB = (Rgrid[1:] + Rgrid[:-1]) / 2.
+    return Rgrid, RgridB
 
 
 def makeScale(data):
@@ -68,7 +165,7 @@ def prepR(R0, rEnd):
 
 
 def regulMatrix(nGrid, biasedEdges=True):
-    #regularization band matrix
+    ### regularization band matrix
     bias = .1 if biasedEdges else 1e-5
     ### (3 x R_grid-1), all 1s
     D = np.ones((3, nGrid-1))

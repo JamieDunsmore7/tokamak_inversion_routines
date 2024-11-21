@@ -4,7 +4,7 @@ import functions as fn
 from mastu import HSV
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy.linalg import eigh, solve_banded
+# from scipy.linalg import eigh, solve_banded
 import sys
 
 
@@ -13,28 +13,33 @@ import sys
 ##################################
 
 
-device = 'rba'
 ### load the dictionary
 dictFile = sys.argv[1]
 inputDict = fn.loadDict(dictFile)
+
 ### unzip the dictionary
 shotn = inputDict['shotn']
 Rzfile = inputDict['Rzfile']
+
+### the inputs to select which bits of video, and averaging
 I0 = inputDict['I0']
 I1 = inputDict['I1']
 J0 = inputDict['J0']
 J1 = inputDict['J1']
-tind = inputDict['tind']
-dtind = inputDict['dtind']
 tend = inputDict['tend']
+raverage = inputDict['raverage']
+taverage = inputDict['taverage']
+T0 = inputDict['T0']
+T1 = inputDict['T1']
 
-nrMult = inputDict['nrMult']
+### variables for the inversion, should be approximately constant
 rEnd = inputDict['rEnd']
+nrMult = inputDict['nrMult']
 sysErr = inputDict['sysErr']
+biasedEdges = bool(inputDict['biasedEdges'])
 nFisher = inputDict['nFisher']
 regGuess = inputDict['regGuess']
 regMin = inputDict['regMin']
-biasedEdges = bool(inputDict['biasedEdges'])
 
 
 #######################################
@@ -49,7 +54,7 @@ R0, z0 = HSV.getRz(Rzfile, I0, I1, J0, J1)
 R, goodChans, flipBool = fn.prepR(R0, rEnd)
 ### grid to interpolate onto
 nGrid = int(len(R0) * nrMult)
-Rgrid = fn.makeGrid(R, nGrid)
+Rgrid, RgridB = fn.makeGrid(R, nGrid)
 ### making dL
 dL = fn.makeDL(Rgrid, R)
 
@@ -62,36 +67,28 @@ dL = fn.makeDL(Rgrid, R)
 ### load the data from UDA
 rawData, time = HSV.get(shotn)
 
-### TODO: currently only good for testing 1 frame
-"""dSlicePrep = (slice(I0,I1), slice(J0,J1), slice(0,len(time)))
-data = HSV.prepData(rawData, dSlicePrep, goodChans, flipBool, rEnd)
-# nT, nR = data.shape
-
-### removing the "offset" from the end, and creating an error
-dSliceBkgd = (slice(I0,I1), slice(J0,J1), slice(tend,len(time)))
-background = HSV.prepBackground(rawData, dSliceBkgd, goodChans, flipBool, rEnd)
-print('this is the data')
-print(data)
-print(data.shape)
-print('this is the background')
-print(background)
-print(background.shape)
-
-data, err = HSV.offset(data, background, nR, sysErr=sysErr)"""
+### TODO: currently only good for testing 1 row of pixels
 dSlice = (slice(I0,I1), slice(J0,J1), slice(0,len(time)))
-data, err, nT, nR = HSV.prepData(rawData, dSlice, goodChans, flipBool, rEnd, tend, sysErr=sysErr)
-print(data.shape, err.shape)
-data = np.mean(data[tind-dtind:tind+dtind,:], axis=0, keepdims=True)
-err = np.mean(err[tind-dtind:tind+dtind,:], axis=0, keepdims=True)
-print(data.shape, err.shape)
-nT = 1
+data, err, nT, nR = HSV.prepData(
+    rawData, dSlice, goodChans, flipBool, rEnd, tend, sysErr=sysErr
+)
+### average in space and time if wanted
+if raverage:
+    data = HSV.makeRadialAverage(data, raverage, rEnd)
+    err = HSV.makeRadialAverage(err, raverage, rEnd)
+if taverage:
+    data = HSV.makeTimeAverage(data, taverage)
+    err = HSV.makeTimeAverage(err, taverage)
+
+### chop down to selected time range
+tSlice = slice(T0, T1)
+data = data[tSlice,:]
+err = err[tSlice,:]
+
+### sizes of data
+nT, nR = data.shape
 ### scale so not working with large numbers
 scale = fn.makeScale(data)
-# print(data)
-# print(data.shape)
-# print(err)
-# print(err.shape)
-# print(scale)
 
 
 ########################################
@@ -108,25 +105,25 @@ chi2 = np.zeros(nT)
 gamma = np.zeros(nT)
 backprojection = np.zeros((nT, nR))
 
+### arrays of indices, used in each iteration
+indLos = slice(0, nR)
+indSpace = slice(0, nGrid-1)
+### linspace, used in each iteration
+Q = np.linspace(0., 1., indLos.stop-indLos.start)
+
 ### iterate over the times
 for i in range(nT):
-    errZinds = np.where(np.isclose(err[i], 0.)) 
+    
+    """### find zeros, as we're dividing by it
+    errZinds = np.where(np.isclose(err[i], 0.))
     T = dL / err[i][:,None] * scale
     mean_d = data[i] / err[i]
-    d = data[i] / err[i] # TODO
-    
     ### replace infs and NaNs
     T[errZinds] = 0.
     mean_d[errZinds] = 0.
-    d[errZinds] = 0.
     
     ### empty array
     W = np.ones(nGrid-1)
-    ### arrays of indices
-    indLos = slice(0, nR)
-    indSpace = slice(0, nGrid-1)
-    ### linspace
-    Q = np.linspace(0., 1., indLos.stop-indLos.start)
     
     ### iterate over the nFisher asked for
     for f in range(nFisher):
@@ -195,55 +192,53 @@ for i in range(nT):
             W = 1. / np.maximum(Y, 1e-10)**.5
     
     ### 
-    p = np.dot(d[indLos], U)
+    p = np.dot(mean_d[indLos], U)
     Y = np.dot((w / S) * p, V.T)
     
     backprojection[i,indLos] = fit = np.dot(p*w, U.T)
-    chi2[i] = np.sum((d[indLos] - fit)**2) / len(fit)
+    chi2[i] = np.sum((mean_d[indLos] - fit)**2) / len(fit)
     gamma[i] = np.interp(g0, np.log(S2), Q)
     
     y[i,indSpace] = Y
     yErr[i,indSpace] = np.sqrt(np.dot(V**2, (w / S)**2))
-    backprojection[i] *= err[i]
+    backprojection[i] *= err[i]"""
+    y[i,indSpace], yErr[i,indSpace], backprojection[i], chi2[i], gamma[i] = \
+    fn.inversion(data[i], err[i], dL, scale, nGrid, Q, D, indLos, indSpace, 
+                nFisher=nFisher, regGuess=regGuess, regMin=regMin
+    )
     
 y *= scale
 yErr *= scale
-RgridB = (Rgrid[1:] + Rgrid[:-1]) / 2.
+
 
 print('all done')
 
-fig, ax = plt.subplots(1, 1, figsize=(3.5,3), dpi=150)
-ax.plot(R, data[0], '-', c='k', zorder=3, label='raw RBA')
-ax.plot(RgridB, y[0], '-', c='C0', zorder=2, label='inversion')
-ax.fill_between(RgridB, y[0]-yErr[0], y[0]+yErr[0], color='C0', alpha=0.2, zorder=2)
-ax.plot(R, backprojection[0,:], c='C2', zorder=4, label='reconst. RBA')
-xplot = [0.2,1.875]
-ax.set_xlim(xplot)
-ax.plot(xplot, [0.,0.], '-k', lw=0.8, zorder=1)
-ax.set_xlabel('R (m)', fontsize=9)
-ax.set_ylabel('Units', fontsize=9)
-ax.legend(fancybox=1, framealpha=1, fontsize=8)
-ax.tick_params(axis="both", which='both', labelsize=9, direction='in', 
-              left=True, bottom=True, right=True, top=False)
-# ax.set_title(title, fontsize=9)
 
-# plt.savefig('/home/sthoma/Documents/Plots/MU04/Inversions/' + 
-#             title.replace(' ', '_').replace('=', '_') + '.png')
-
-# ax2 = ax.twinx()
-# ax2.plot(R, vignette, c='C3')
-# ax2.set_ylabel('Vignette fn', c='C3')
-# ax2.plot(xplot, [1.,1.], '-k', lw=0.8, zorder=1)
-plt.tight_layout()
+for i in range(nT):
+    fig, ax = plt.subplots(1, 1, figsize=(3.5,3), dpi=150)
+    ax.plot(R, data[i], '-', c='k', zorder=3, label='raw RBA')
+    ax.plot(RgridB, y[i], '-', c='C0', zorder=2, label='inversion')
+    ax.fill_between(RgridB, y[i]-yErr[i], y[i]+yErr[i], color='C0', alpha=0.2, zorder=2)
+    ax.plot(R, backprojection[i,:], c='C2', zorder=4, label='reconst. RBA')
+    xplot = [0.2,1.875]
+    ax.set_xlim(xplot)
+    ax.plot(xplot, [0.,0.], '-k', lw=0.8, zorder=1)
+    ax.set_xlabel('R (m)', fontsize=9)
+    ax.set_ylabel('Units', fontsize=9)
+    ax.legend(fancybox=1, framealpha=1, fontsize=8)
+    ax.tick_params(axis="both", which='both', labelsize=9, direction='in', 
+                left=True, bottom=True, right=True, top=False)
+    ax.title.set_text(f'i={i:.0f}')
+    plt.tight_layout()
 plt.show()
 
 
-np.savez(
-    'testing.npz', 
-    R = R,
-    data = data,
-    Rgrid = Rgrid,
-    y = y,
-    yErr = yErr,
-    backprojection = backprojection,
-)
+# np.savez(
+#     'testing.npz', 
+#     R = R,
+#     data = data,
+#     Rgrid = Rgrid,
+#     y = y,
+#     yErr = yErr,
+#     backprojection = backprojection,
+# )
