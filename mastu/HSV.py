@@ -114,23 +114,31 @@ def transform(vignFn, shotn):
     return vignFn.T[:,::-1]
 
 
-def prepData(raw, dSlice, goodChans, flipBool, rEnd):
+# def prepBackground(raw, dSlice, goodChans, flipBool, rEnd):
+#     background = np.mean(raw[dSlice], axis=-1, keepdims=True)[0]
+#     background = background[goodChans,:]
+#     if flipBool:
+#         background = np.flip(background, axis=0)
+#     if rEnd:
+#         background = np.insert(
+#         background, background.shape[0], 0., axis=0
+#         )
+#     return background.T
+
+
+def prepData(rawData, dSlice, goodChans, flipBool, rEnd, tend, sysErr=5.):
     ### raw should be in the shape (nz, nR, nt)
-    data = np.mean(raw[dSlice], axis=-1, keepdims=True)[0]
-    data = data[goodChans,:]
+    data = rawData[dSlice][0] # remove z axis so it's 2D
+    data = data[goodChans,:].T
     if flipBool:
-        data = np.flip(data, axis=0)
+        data = np.flip(data, axis=1)
     if rEnd:
-        data = np.insert(data, data.shape[0], 0., axis=0)
-    return data.T
-
-
-def offset(data, raw, dSlice, tend, nR, sysErr=5.):
-    background = np.mean(
-        raw[dSlice][:,:,tend:], axis=-1, keepdims=True
-    )[0].T
+        data = np.insert(data, data.shape[1], 0., axis=1)
+    
+    nT, nR = data.shape
+    background = np.mean(data[tend:,:], axis=0, keepdims=True)
     dataLow = data - background
-    errLow = np.std(dataLow, axis=0, keepdims=True) / 3.
+    errLow = np.std(dataLow[tend:,:], axis=0, keepdims=True) / 3.
     ind1 = np.r_[1,0:nR-1]
     ind2 = np.r_[1:nR,nR-2]
     errLow += np.std(
@@ -146,7 +154,50 @@ def offset(data, raw, dSlice, tend, nR, sysErr=5.):
     err = np.sqrt(
         (errLow * calf)**2 + (dataLow * calfErr)**2
     )
-    return data, err
+    return data, err, nT, nR
+
+
+def prepData0(rawData, dSlice, goodChans, flipBool, rEnd, tend, sysErr=5.):
+    ### raw should be in the shape (nz, nR, nt)
+    data = rawData[dSlice][0] # remove z axis so it's 2D
+    data = data[goodChans,:].T
+    if flipBool:
+        data = np.flip(data, axis=1)
+    if rEnd:
+        data = np.insert(data, data.shape[1], 0., axis=1)
+    data = np.mean(data[495:505,:], axis=0, keepdims=True)
+    dataLow = data.reshape(-1,1,data.shape[1]).mean(1)
+    errLow = np.zeros_like(dataLow)
+    dataLow -= dataLow[:,[-1]]
+    errLow = np.maximum(errLow, -dataLow)
+    nT, nR = data.shape
+    calf, calfErr = makeCal(nR, sysErr=sysErr)
+    data = dataLow * calf
+    err = np.sqrt(
+        (errLow * calf)**2 + (dataLow * calfErr)**2
+    )
+    return data, err, nT, nR
+
+
+# def offset(data, background, nR, sysErr=5.):
+#     dataLow = data - background
+#     errLow = np.std(dataLow, axis=0, keepdims=True) / 3.
+#     ind1 = np.r_[1,0:nR-1]
+#     ind2 = np.r_[1:nR,nR-2]
+#     errLow += np.std(
+#         np.diff(
+#             dataLow - (dataLow[:,ind1] + dataLow[:,ind2]) / 2., axis=0
+#         ), axis=0
+#     ) / np.sqrt(2.)
+#     dataLow -= dataLow[:,[-1]]
+#     errLow = np.maximum(errLow, -dataLow)
+    
+#     calf, calfErr = makeCal(nR, sysErr=sysErr)
+#     data = dataLow * calf
+#     err = np.sqrt(
+#         (errLow * calf)**2 + (dataLow * calfErr)**2
+#     )
+#     return data, err
 
 
 def makeCal(nR, sysErr=5.):
@@ -162,3 +213,30 @@ def makeCal(nR, sysErr=5.):
 
 
 #
+    """
+    
+    function abel_inversion, r,g
+
+;computes the inverse Abel transform of radial profiles. Can convert a
+;chord-integrated tangential brightness measurement into local emissivity
+;If converting brightness (Power/area/ster) to emissivity (Power/vol),
+;then multiply result by 4pi 
+
+nr=n_elements(r)
+result=fltarr(nr)
+dr=r-shift(r,1)
+dr(0)=dr(1)
+dg=g-shift(g,1)
+dg(0)=0.
+
+for i=nr-1,0,-1 do begin
+   for j=i,nr-1 do begin
+      integrand=-1/!pi*dg(j)/sqrt(r(j)^2.-r(i)^2.)
+      if finite(integrand) then result(i)=result(i)+integrand
+   endfor   
+endfor
+
+return,result
+
+end
+    """

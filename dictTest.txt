@@ -13,8 +13,8 @@
     "nrMult": 2.5,
     "rEnd": 1.8,
     "sysErr": 5,
-    "nFisher" = 4,
+    "nFisher": 4,
     "regGuess": 0.7,
-    "regMin": 0.4
-    
+    "regMin": 0.4,
+    "biasedEdges": 1
 }

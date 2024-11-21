@@ -79,19 +79,12 @@ print(background.shape)
 
 data, err = HSV.offset(data, background, nR, sysErr=sysErr)"""
 dSlice = (slice(I0,I1), slice(J0,J1), slice(0,len(time)))
-data, err, nT, nR = HSV.prepData(rawData, dSlice, goodChans, flipBool, rEnd, tend, sysErr=sysErr)
-print(data.shape, err.shape)
-data = np.mean(data[tind-dtind:tind+dtind,:], axis=0, keepdims=True)
-err = np.mean(err[tind-dtind:tind+dtind,:], axis=0, keepdims=True)
-print(data.shape, err.shape)
-nT = 1
+data, err, nT, nR = HSV.prepData0(rawData, dSlice, goodChans, flipBool, rEnd, tend, sysErr=sysErr)
+print(data, data.shape)
+print(err, err.shape)
+
 ### scale so not working with large numbers
 scale = fn.makeScale(data)
-# print(data)
-# print(data.shape)
-# print(err)
-# print(err.shape)
-# print(scale)
 
 
 ########################################
@@ -113,7 +106,7 @@ for i in range(nT):
     errZinds = np.where(np.isclose(err[i], 0.)) 
     T = dL / err[i][:,None] * scale
     mean_d = data[i] / err[i]
-    d = data[i] / err[i] # TODO
+    d = data[i] / err[i]
     
     ### replace infs and NaNs
     T[errZinds] = 0.
@@ -197,8 +190,12 @@ for i in range(nT):
     ### 
     p = np.dot(d[indLos], U)
     Y = np.dot((w / S) * p, V.T)
+    # print(fit.shape, fit)
+    print(p.shape, p)
+    print(w.shape, w)
+    print(U.T.shape, U.T)
     
-    backprojection[i,indLos] = fit = np.dot(p*w, U.T)
+    backprojection[i,indLos] = fit = np.dot(p * w, U.T)
     chi2[i] = np.sum((d[indLos] - fit)**2) / len(fit)
     gamma[i] = np.interp(g0, np.log(S2), Q)
     
@@ -239,7 +236,7 @@ plt.show()
 
 
 np.savez(
-    'testing.npz', 
+    'testing0.npz', 
     R = R,
     data = data,
     Rgrid = Rgrid,

@@ -4,6 +4,27 @@ import json
 import numpy as np
 
 
+def FindMin(F, x0, dx0, prod, S, U, tol=0.01):
+    #stupid but robust minimum searching algorithm.
+    fg = F(x0, prod, S, U)
+    while abs(dx0) > tol:
+        fg2 = F(x0 + dx0, prod, S, U)
+        if fg2 < fg:
+            fg = fg2
+            x0 += dx0
+            continue
+        else:
+            dx0 /= -2.
+    return x0, np.log(fg2)
+
+
+def GCV(g, prod, S, U):
+    #generalized crossvalidation
+    w = 1. / (1. + np.exp(g) / S**2)
+    ndets = len(prod)
+    return (np.sum((((w - 1) * prod))**2) + 1) / ndets / (1 - np.mean(w))**2
+
+
 def loadDict(dictFile):
     with open(dictFile) as f:
         textDict = f.read()
@@ -11,18 +32,17 @@ def loadDict(dictFile):
     return inputDict
 
 
-def makeGrid(R, nrMult=2.5):
-    nR = int(len(R) * nrMult)
-    Rmin = R[0]
-    Rmax = R[-1]
-    Rgrid = np.linspace(Rmin, Rmax, nR)
-    return Rgrid, nR
-
-
 def makeDL(Rgrid, R):
     dL = 2*(np.sqrt(np.maximum((Rgrid[1:])**2-R[:,None]**2,0)) 
             -np.sqrt(np.maximum( Rgrid[:-1]**2-R[:,None]**2,0)))
     return dL
+
+
+def makeGrid(R, nGrid):
+    Rmin = R[0]
+    Rmax = R[-1]
+    Rgrid = np.linspace(Rmin, Rmax, nGrid)
+    return Rgrid
 
 
 def makeScale(data):
@@ -44,5 +64,20 @@ def prepR(R0, rEnd):
         flipBool = False
     if rEnd:
         R = np.insert(R, len(R), rEnd)
-    nR = len(R)
-    return R, nR, goodChans, flipBool
+    return R, goodChans, flipBool
+
+
+def regulMatrix(nGrid, biasedEdges=True):
+    #regularization band matrix
+    bias = .1 if biasedEdges else 1e-5
+    ### (3 x R_grid-1), all 1s
+    D = np.ones((3, nGrid-1))
+    ### make row 1 all negative 2s
+    D[1, :] *= -2
+    ### last in middle row is bias value
+    D[1, -1] = bias
+    ### middle row, first element and second last element are negative 1s
+    D[1, [0, nGrid-3]] = -1
+    ### last row, elements -2 and -3 are set to zero
+    D[2, [-2, -3]] = 0
+    return D
