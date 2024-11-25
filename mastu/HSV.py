@@ -112,7 +112,7 @@ def vignetteFunction(xy, x0, y0, wx, wy, shape, amp, offset):
 def vignette(
         x0=0, x1=1023, dx=1, y0=0, y1=1023, dy=1, xc=519.195, yc=500.687,
         wx=140.377, wy=140.257, shape=0.19405, amp=152.067, offset=121.7288
-        ):
+    ):
     x = np.arange(x0, x1+dx, dx)
     y = np.arange(y0, y1+dy, dy)
     xx, yy = np.meshgrid(x, y)
