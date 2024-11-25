@@ -78,6 +78,26 @@ def makeImage(shotn, tind, savePath='/home/sthoma/calcam/images/'):
     return
 
 
+def loadVignette(inputDict):
+    x0 = inputDict['x0']
+    x1 = inputDict['x1']
+    dx = inputDict['dx']
+    y0 = inputDict['y0']
+    y1 = inputDict['y1']
+    dy = inputDict['dy']
+    xc = inputDict['xc']
+    yc = inputDict['yc']
+    wx = inputDict['wx']
+    wy = inputDict['wy']
+    shape = inputDict['shape']
+    amp = inputDict['amp']
+    offset = inputDict['offset']
+    vignetteArgs = (
+        x0, x1, dx, y0, y1, dy, xc, yc, wx, wy, shape, amp, offset
+    )
+    return vignetteArgs
+
+
 def vignetteFunction(xy, x0, y0, wx, wy, shape, amp, offset):
     x, y = xy
     z = np.sqrt(((x - x0) / wx) ** 2 + ((y - y0) / wy) ** 2)
@@ -114,6 +134,25 @@ def transform(vignFn, shotn):
     return vignFn.T[:,::-1]
 
 
+def applyVignette(data, err, inputDict, shotn, dSlice, flipBool, rEnd):
+    vignArgs = loadVignette(inputDict)
+    vignFn = vignette(*vignArgs)
+    vignFn = transform(vignFn, shotn)
+    vignFn /= vignFn.max()
+    vignFn = vignFn[dSlice][0]
+    
+    if flipBool:
+        vignFn = np.flip(vignFn)
+    if rEnd:
+        rSlice = slice(0, data.shape[1]-1)
+    else:
+        rSlice = slice(0, data.shape[1])
+    
+    data[:,rSlice] /= vignFn[np.newaxis,:]
+    err[:,rSlice] /= vignFn[np.newaxis,:]
+    return data, err
+
+
 def prepData(rawData, dSlice, goodChans, flipBool, rEnd, tend, sysErr=5.):
     ### preparing data for the inversion routine
     ### raw should be in the shape (nz, nR, nt)
@@ -124,7 +163,7 @@ def prepData(rawData, dSlice, goodChans, flipBool, rEnd, tend, sysErr=5.):
     if rEnd:
         data = np.insert(data, data.shape[1], 0., axis=1)
     
-    nT, nR = data.shape
+    nR = data.shape[1]
     background = np.mean(data[tend:,:], axis=0, keepdims=True)
     dataLow = data - background
     errLow = np.std(dataLow[tend:,:], axis=0, keepdims=True) / 3.
@@ -143,7 +182,7 @@ def prepData(rawData, dSlice, goodChans, flipBool, rEnd, tend, sysErr=5.):
     err = np.sqrt(
         (errLow * calf)**2 + (dataLow * calfErr)**2
     )
-    return data, err, nT, nR
+    return data, err
 
 
 def makeCal(nR, sysErr=5.):
@@ -176,6 +215,29 @@ def makeTimeAverage(data, taverage):
     for i in range(0, data.shape[1]):
         data2[:,i] = np.convolve(data[:,i], kernel, mode='same')
     return data2
+
+
+def applyCalibration(data, err, inputDict):
+    m = inputDict['mPhotons']
+    mErr = inputDict['mPhotonsErr']
+    data, _ = count2photon(data, m=m, mErr=mErr)
+    err, _ = count2photon(err, m=m, mErr=mErr)
+    return data, err
+    
+
+def count2photon(data, m=8.7051e12, mErr=6.4e9):
+    photons = data * m * 4. * np.pi
+    photonsErr = data * mErr * 4. * np.pi
+    return photons, photonsErr
+
+
+
+
+
+
+
+
+
 
 
 

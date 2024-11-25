@@ -74,16 +74,14 @@ def inversion(data, err, dL, scale, nGrid, Q, D, indLos,
         if f == (nFisher-1):
             ### last step - find optimal regularisation
             S = np.sqrt(S2)
-            
             g0, log_fg2 = FindMin(GCV, g0, 1, mean_p, S, U.T) # slowest step
-            ### avoid too small regularisation when min of GCV is not found
             
+            ### avoid too small regularisation when min of GCV is not found
             gmin = np.interp(regMin, Q, np.log(S2))
             g0 = max(g0, gmin)
             
             ### filtering factor
             w = 1. / (1. + np.exp(g0) / S2)
-
             V = np.dot(H, U / S)
             V = solve_banded(
                 (1,1), WD, V, overwrite_ab=True, 
@@ -109,13 +107,11 @@ def inversion(data, err, dL, scale, nGrid, Q, D, indLos,
     p = np.dot(mean_d[indLos], U)
     Y = np.dot((w / S) * p, V.T)
     
+    ###
+    yErr = np.sqrt(np.dot(V**2, (w / S)**2))
     backprojection = fit = np.dot(p*w, U.T) * err
     chi2 = np.sum((mean_d[indLos] - fit)**2) / len(fit)
     gamma = np.interp(g0, np.log(S2), Q)
-    
-    # y[i,indSpace] = Y
-    yErr = np.sqrt(np.dot(V**2, (w / S)**2))
-    # backprojection[i] *= err[i]
     
     return Y, yErr, backprojection, chi2, gamma
 
@@ -142,6 +138,22 @@ def makeGrid(R, nGrid):
     return Rgrid, RgridB
 
 
+def makeFName(saveDir, shotn, saveFile):
+    ### creates directory if needed
+    ### iterates filename to stop oversaving
+    import os
+    
+    saveStr = f'{saveDir}{shotn}/'
+    if not os.path.exists(saveStr):
+        os.makedirs(saveStr)
+    
+    fname = f'{saveStr}{saveFile}'
+    while os.path.isfile(fname):
+        fname = fname.replace('.', '(1).')
+    
+    return fname
+
+
 def makeScale(data):
     i = 0
     scale = np.median(data[i:])
@@ -150,6 +162,29 @@ def makeScale(data):
         scale = np.median(data[i:])
     return scale
 
+
+def plotResults(R, data, RgridB, y, yErr, backprojection, time):
+    import matplotlib.pyplot as plt
+    for i in range(data.shape[0]):
+        fig, ax = plt.subplots(1, 1, figsize=(3.5,3), dpi=150)
+        ax.plot(R, data[i], '-', c='k', zorder=3, label='raw RBA')
+        ax.plot(RgridB, y[i], '-', c='C0', zorder=2, label='inversion')
+        ax.fill_between(
+            RgridB, y[i]-yErr[i], y[i]+yErr[i], color='C0', alpha=0.2, zorder=2
+        )
+        ax.plot(R, backprojection[i,:], c='C2', zorder=4, label='reconst. RBA')
+        xplot = [0.2,1.875]
+        ax.set_xlim(xplot)
+        ax.plot(xplot, [0.,0.], '-k', lw=0.8, zorder=1)
+        ax.set_xlabel('R (m)', fontsize=9)
+        ax.set_ylabel('Units', fontsize=9)
+        ax.legend(fancybox=1, framealpha=1, fontsize=8)
+        ax.tick_params(axis="both", which='both', labelsize=9, direction='in', 
+                    left=True, bottom=True, right=True, top=False)
+        ax.title.set_text(f'i={i:.0f}, t={time[i]:.4f}s')
+        plt.tight_layout()
+    plt.show()
+    return
 
 def prepR(R0, rEnd):
     goodChans = np.ones(len(R0)).astype(bool)
@@ -178,3 +213,10 @@ def regulMatrix(nGrid, biasedEdges=True):
     ### last row, elements -2 and -3 are set to zero
     D[2, [-2, -3]] = 0
     return D
+
+
+def saveDict(inputDict, dictFile):
+    ### save the dictionary used to make the results
+    with open(dictFile, 'w') as f:
+        json.dump(inputDict, f)
+    return
