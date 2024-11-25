@@ -9,9 +9,9 @@
     "J1": 215,
     "tend": 570,
     "raverage": 0,
-    "taverage": 5,
-    "T0": 495,
-    "T1": 505,
+    "taverage": 10,
+    "T0": 500,
+    "T1": 501,
 
 
     "saveFile": "testing.npz",
