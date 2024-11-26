@@ -45,5 +45,4 @@
     "nFisher": 4,
     "regGuess": 0.7,
     "regMin": 0.4
-    
 }

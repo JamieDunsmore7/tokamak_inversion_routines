@@ -179,4 +179,4 @@ if saveFile:
 
 
 if plot:
-    fn.plotResults(R, data, RgridB, y, yErr, backprojection, time)
+    fn.plotResults(R, data, err, RgridB, y, yErr, backprojection, time)

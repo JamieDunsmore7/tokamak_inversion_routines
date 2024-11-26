@@ -163,11 +163,14 @@ def makeScale(data):
     return scale
 
 
-def plotResults(R, data, RgridB, y, yErr, backprojection, time):
+def plotResults(R, data, err, RgridB, y, yErr, backprojection, time):
     import matplotlib.pyplot as plt
     for i in range(data.shape[0]):
         fig, ax = plt.subplots(1, 1, figsize=(3.5,3), dpi=150)
         ax.plot(R, data[i], '-', c='k', zorder=3, label='raw RBA')
+        ax.fill_between(
+            R, data[i]-err[i], data[i]+err[i], color='k', alpha=0.2
+        )
         ax.plot(RgridB, y[i], '-', c='C0', zorder=2, label='inversion')
         ax.fill_between(
             RgridB, y[i]-yErr[i], y[i]+yErr[i], color='C0', alpha=0.2, zorder=2
@@ -185,6 +188,7 @@ def plotResults(R, data, RgridB, y, yErr, backprojection, time):
         plt.tight_layout()
     plt.show()
     return
+
 
 def prepR(R0, rEnd):
     goodChans = np.ones(len(R0)).astype(bool)
