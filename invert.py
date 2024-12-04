@@ -100,9 +100,10 @@ if photons:
     data, err = HSV.applyCalibration(data, err, inputDict)
 
 ### convert to ph m^-2 sr^-1 s^-1
-exposureTime = HSV.getExposure(shotn, mult=exposureMult)
-data /= exposureTime
-err /= exposureTime
+# exposureTime = HSV.getExposure(shotn, mult=exposureMult)
+# data /= exposureTime
+# err /= exposureTime
+data, err = HSV.applyExposure(data, err, shotn, mult=exposureMult)
 
 ### apply vignette function
 if vignette:

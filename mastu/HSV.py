@@ -241,7 +241,11 @@ def count2photon(data, m=8.7051e12, mErr=6.4e9):
     return photons, photonsErr
 
 
-
+def applyExposure(data, err, shotn, mult=1e-6):
+    exposureTime = getExposure(shotn, mult=mult)
+    data /= exposureTime
+    err /= exposureTime
+    return data, err
 
 
 
