@@ -183,7 +183,7 @@ def plotResults(R, data, err, RgridB, y, yErr, backprojection, time):
         ax.set_ylabel('Units', fontsize=9)
         ax.legend(fancybox=1, framealpha=1, fontsize=8)
         ax.tick_params(axis="both", which='both', labelsize=9, direction='in', 
-                    left=True, bottom=True, right=True, top=False)
+                    left=True, bottom=True, right=True, top=True)
         ax.title.set_text(f'i={i:.0f}, t={time[i]:.4f}s')
         plt.tight_layout()
     plt.show()

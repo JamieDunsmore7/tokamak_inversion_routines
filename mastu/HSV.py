@@ -52,6 +52,11 @@ def getSingle(shotn, tind):
     return frame[:,::-1], time
 
 
+def getExposure(shotn, mult=1e-6):
+    data = client.get_images('rba', shotn, frame_number=0)
+    return data.exposure * mult
+
+
 def getRz(Rzfile, I0, I1, J0, J1):
     
     data = np.load(Rzfile)
@@ -143,7 +148,7 @@ def applyVignette(data, err, inputDict, shotn, dSlice, flipBool, rEnd):
     ### last two vignArgs are amp(litude) and offset, respectively
     # vignFn /= vignFn.max()
     # vignFn -= vignArgs[-1]
-    vignFn /= (vignArgs[-1] + vignArgs[-2])
+    vignFn /= (vignArgs[-2] + vignArgs[-1])
     vignFn = vignFn[dSlice][0]
     
     if flipBool:
@@ -231,8 +236,8 @@ def applyCalibration(data, err, inputDict):
     
 
 def count2photon(data, m=8.7051e12, mErr=6.4e9):
-    photons = data * m * 4. * np.pi
-    photonsErr = data * mErr * 4. * np.pi
+    photons = data * m #* 4. * np.pi
+    photonsErr = data * mErr #* 4. * np.pi
     return photons, photonsErr
 
 

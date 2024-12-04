@@ -1,6 +1,6 @@
 {
     "shotn": 49091,
-    "Rzfile": "/home/sthoma/tokamak_inversion_routines/mastu/rba_viewing.npz",
+    "Rzfile": "/home/sthoma/tokamak_inversion_routines/mastu/rba_viewing_49091.npz",
 
 
     "I0": 260,
@@ -14,12 +14,13 @@
     "T1": 501,
 
 
-    "saveFile": "testing.npz",
+    "saveFile": "testing_newRz.npz",
 
 
     "photons": 1,
     "mPhotons": 8.7051e12,
     "mPhotonsErr": 6.4e9,
+    "exposureMult": 1e-6,
 
 
     "vignette": 1,

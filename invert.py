@@ -6,7 +6,8 @@ import numpy as np
 import sys
 
 
-saveDir = '/common/BES_analysis/rbaResults/'
+# saveDir = '/common/BES_analysis/rbaResults/'
+saveDir = '/home/sthoma/Documents/Results/rba/'
 plot = True
 
 
@@ -36,6 +37,7 @@ T1 = inputDict['T1']
 
 ### for converting to photons and account for vignetting
 photons = bool(inputDict['photons'])
+exposureMult = inputDict['exposureMult']
 vignette = bool(inputDict['vignette'])
 
 ### variables for the inversion, should be approximately constant
@@ -97,9 +99,16 @@ time = time[tSlice]
 if photons:
     data, err = HSV.applyCalibration(data, err, inputDict)
 
+### convert to ph m^-2 sr^-1 s^-1
+exposureTime = HSV.getExposure(shotn, mult=exposureMult)
+data /= exposureTime
+err /= exposureTime
+
 ### apply vignette function
 if vignette:
-    data, err = HSV.applyVignette(data, err, inputDict, shotn, dSlice[:-1], flipBool, rEnd)
+    data, err = HSV.applyVignette(
+        data, err, inputDict, shotn, dSlice[:-1], flipBool, rEnd
+    )
 
 ### sizes of data
 nT, nR = data.shape
