@@ -2,7 +2,58 @@
 
 import json
 import numpy as np
+from scipy.interpolate import RegularGridInterpolator
 from scipy.linalg import eigh, solve_banded
+
+
+def calcSiz(
+    emissivity, temperature, density, fExcite, 
+    scaleExcite, fIonise, scaleIonise
+    ):
+    SCD = fIonise((temperature, density)) * scaleIonise
+    EXC = fExcite((temperature, density)) * scaleExcite
+    ionisation = 4. * np.pi * emissivity * SCD / EXC
+    return ionisation
+
+
+def calcErr(
+    function, y, emissivity, emissivityErr, temperature, 
+    density, fExcite, scaleExcite, f2, scale2, percent=0.1
+    ):
+    emisBounds = np.vstack(
+        (emissivity - emissivityErr, emissivity + emissivityErr)
+    )
+    tempBounds = np.vstack(
+        ((1. - percent) * temperature, (1. + percent) * temperature)
+    )
+    densBounds = np.vstack(
+        ((1. - percent) * density, (1. + percent) * density)
+    )
+    err = np.zeros((8, len(emissivity)))
+    I = 0
+    for i in range(0, 2):
+        for j in range(0, 2):
+            for k in range(0, 2):
+                err[I] = function(
+                    emisBounds[i], tempBounds[j], densBounds[k], 
+                    fExcite, scaleExcite, f2, scale2
+                )
+                I += 1
+    err = np.abs(y - err).max(axis=0)
+    return err
+
+
+def calcN0(
+    emissivity, temperature, density, fExcite, 
+    scaleExcite, fRecomb, scaleRecomb
+    ):
+    REC = fRecomb((temperature, density)) * scaleRecomb * density * density
+    EXC = fExcite((temperature, density)) * scaleExcite * density
+    n0 = ((4. * np.pi * emissivity) - REC) / EXC
+    return n0
+
+### fLinear((profileTemp[Rind:], profileDensity[Rind:])) * scalar
+
 
 
 def FindMin(F, x0, dx0, prod, S, U, tol=0.01):
@@ -124,6 +175,39 @@ def loadDict(dictFile):
     return inputDict
 
 
+def loadADAS(line='dalpha'):
+    dir = './ADAS/'
+    if line == 'dalpha':
+        excite = np.load(dir + '/EXCIT_pec12#h_pju#h0.npz')
+        recomb = np.load(dir + '/RECOM_pec12#h_pju#h0.npz')
+        ionise = np.load(dir + '/IONIS_scd12h.npz')
+        Te = excite['Te'] # eV
+        ne = excite['ne'] # m^-3
+        dataExcite = excite['data'] # ph m^3 s^-1
+        dataRecomb = recomb['data'] # ph m^3 s^-1
+        dataIonise = ionise['data'] # m^3 s^-1
+    return Te, ne, dataExcite, dataRecomb, dataIonise
+
+
+def makeADAS(
+    line='dalpha', excite='cubic', recomb='cubic', ionise='linear'
+    ):
+    Te, ne, dataExcite, dataRecomb, dataIonise = loadADAS(line=line)
+    scaleExcite = 10**int(np.log10(np.median(dataExcite)))
+    fExcite = RegularGridInterpolator(
+        (Te, ne), dataExcite.T / scaleExcite, method=excite
+        )
+    scaleRecomb = 10**int(np.log10(np.median(dataRecomb)))
+    fRecomb = RegularGridInterpolator(
+        (Te, ne), dataRecomb.T / scaleRecomb, method=recomb
+        )
+    scaleIonise = 10**int(np.log10(np.median(dataIonise)))
+    fIonise = RegularGridInterpolator(
+        (Te, ne), dataIonise.T / scaleIonise, method=ionise
+        )
+    return fExcite, scaleExcite, fRecomb, scaleRecomb, fIonise, scaleIonise
+
+
 def makeDL(Rgrid, R):
     dL = 2*(np.sqrt(np.maximum((Rgrid[1:])**2-R[:,None]**2,0)) 
             -np.sqrt(np.maximum( Rgrid[:-1]**2-R[:,None]**2,0)))
@@ -163,7 +247,30 @@ def makeScale(data):
     return scale
 
 
-def plotResults(R, data, err, RgridB, y, yErr, backprojection, time):
+def neutrals(
+    emissivity, emissivityErr, temperature, density, fExcite, 
+    scaleExcite, fRecomb, scaleRecomb, fIonise, scaleIonise, percent=0.1):
+    ### one iteration of the neutrals calculations
+    ioniseRate = calcSiz(
+        emissivity, temperature, density, 
+        fExcite, scaleExcite, fIonise, scaleIonise
+    )
+    ioniseError = calcErr(
+        calcSiz, ioniseRate, emissivity, emissivityErr, temperature, 
+        density, fExcite, scaleExcite, fIonise, scaleIonise, percent=percent
+    )
+    neutralDensity = calcN0(
+        emissivity, temperature, density, 
+        fExcite, scaleExcite, fRecomb, scaleRecomb
+    )
+    neutralErr = calcErr(
+        calcN0, neutralDensity, emissivity, emissivityErr, temperature, 
+        density, fExcite, scaleExcite, fRecomb, scaleRecomb, percent=percent
+    )
+    return ioniseRate, ioniseError, neutralDensity, neutralErr
+    
+
+def plotInversion(R, data, err, RgridB, y, yErr, backprojection, time):
     import matplotlib.pyplot as plt
     for i in range(data.shape[0]):
         fig, ax = plt.subplots(1, 1, figsize=(3.5,3), dpi=150)

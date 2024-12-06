@@ -45,5 +45,14 @@
     "biasedEdges": 1,
     "nFisher": 4,
     "regGuess": 0.7,
-    "regMin": 0.4
+    "regMin": 0.4,
+
+    "Rprofile0": 1.25,
+
+    "line": "dalpha",
+    "kindExcite": "cubic",
+    "kindRecomb": "cubic",
+    "kindIonise": "linear",
+
+    "percent": 0.1
 }

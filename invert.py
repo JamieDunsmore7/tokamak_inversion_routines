@@ -1,9 +1,15 @@
 #!/usr/bin/env python3
 
+### author: Steven Thomas
+### email:  steven.thomas@ukaea.uk; sthoma@mit.edu
+__version__ = '1.1.0'
+
+
 import functions as fn
 from mastu import HSV
 import numpy as np
 import sys
+import scipy
 
 
 # saveDir = '/common/BES_analysis/rbaResults/'
@@ -49,6 +55,18 @@ biasedEdges = bool(inputDict['biasedEdges'])
 nFisher = inputDict['nFisher']
 regGuess = inputDict['regGuess']
 regMin = inputDict['regMin']
+
+### R value pedestal fitting works up to
+Rprofile0 = inputDict['Rprofile0']
+
+### kind of interpolation to use, don't need to change
+line = inputDict['line']
+kindExcite = inputDict['kindExcite']
+kindRecomb = inputDict['kindRecomb']
+kindIonise = inputDict['kindIonise']
+
+### using a constant percentage for profile error
+percent = inputDict['percent']
 
 
 ###############################################################################
@@ -125,8 +143,8 @@ scale = fn.makeScale(data)
 ### make the regularisation band matrix
 D = fn.regulMatrix(nGrid, biasedEdges=biasedEdges)
 ### making empty arrays for results
-y = np.zeros((nT, nGrid-1))
-yErr = np.zeros((nT, nGrid-1))
+emissivity = np.zeros((nT, nGrid-1))
+emissivityErr = np.zeros((nT, nGrid-1))
 chi2 = np.zeros(nT)
 gamma = np.zeros(nT)
 backprojection = np.zeros((nT, nR))
@@ -140,20 +158,79 @@ Q = np.linspace(0., 1., indLos.stop-indLos.start)
 ### iterate over the times
 for i in range(nT):
     
-    y[i,indSpace], yErr[i,indSpace], backprojection[i], chi2[i], gamma[i] = \
-    fn.inversion(data[i], err[i], dL, scale, nGrid, Q, D, indLos, indSpace, 
-                nFisher=nFisher, regGuess=regGuess, regMin=regMin
+    emissivity[i,indSpace], emissivityErr[i,indSpace], backprojection[i], \
+        chi2[i], gamma[i] = fn.inversion(
+            data[i], err[i], dL, scale, nGrid, Q, D, indLos, indSpace, 
+            nFisher=nFisher, regGuess=regGuess, regMin=regMin
     )
 
 ### multiply the answers by scale
-y *= scale
-yErr *= scale
+emissivity *= scale
+emissivityErr *= scale
+
+
+###############################################################################
+###                          getting profile data                           ###
+###############################################################################
+
+
+### load the pedestal fitting parameters
+timePed, R0Density, heightDensity, widthDensity, \
+    gradDensity, bkgdDensity = HSV.getPedestal(shotn, 'n_e')
+_, R0Temp, heightTemp, widthTemp, \
+    gradTemp, bkgdTemp = HSV.getPedestal(shotn, 'T_e')
+
+### make R array for profiles
+Rind = HSV.findNearest(RgridB, Rprofile0)
+Rprofile = RgridB[Rind:]
+
+### make ADAS data functions
+fExcite, scaleExcite, fRecomb, scaleRecomb, fIonise, scaleIonise = fn.makeADAS(
+    line=line, excite=kindExcite, recomb=kindRecomb, ionise=kindIonise
+)
+
+
+###############################################################################
+###                         iterate for Siz and n0                          ###
+###############################################################################
+
+
+### make empty arrays for Siz, n0, and errors
+ioniseRate = np.zeros((nT, len(Rprofile)))
+ioniseErr = np.zeros((nT, len(Rprofile)))
+neutralDensity = np.zeros((nT, len(Rprofile)))
+neutralErr = np.zeros((nT, len(Rprofile)))
+
+### iterate over the times
+for i in range(nT):
+    
+    ### make profiles for this timestep
+    T = HSV.findNearest(timePed, time[i])
+    profileTemp = HSV.mtanh(
+        Rprofile, R0Temp[T], heightTemp[T], 
+        widthTemp[T], gradTemp[T], bkgdTemp[T]
+    )
+    profileDensity = HSV.mtanh(
+        Rprofile, R0Density[T], heightDensity[T], 
+        widthDensity[T], gradDensity[T], bkgdDensity[T]
+    )
+        
+    ### throw it into the iteration function
+    ioniseRate[i], ioniseErr[i], neutralDensity[i], neutralErr[i] = \
+        fn.neutrals(
+            emissivity[i,Rind:], emissivityErr[i,Rind:], profileTemp, 
+            profileDensity, fExcite, scaleExcite, fRecomb, scaleRecomb, 
+            fIonise, scaleIonise, percent=percent
+    )
 
 
 ###############################################################################
 ###                             saving the data                             ###
 ###############################################################################
 
+
+### add the file version number
+inputDict['__version__'] = __version__
 
 if saveFile:
     
@@ -166,10 +243,14 @@ if saveFile:
         time = time, 
         Rgrid = Rgrid,
         RgridB = RgridB,
-        y = y,
-        yErr = yErr,
+        emissivity = emissivity,
+        emissivityErr = emissivityErr,
         backprojection = backprojection,
         scale = scale,
+        ioniseRate = ioniseRate,
+        ioniseErr = ioniseErr,
+        neutralDensity = neutralDensity,
+        neutralErr = neutralErr,
     )
     
     ### make filename for dictionary of inputs
@@ -189,4 +270,6 @@ if saveFile:
 
 
 if plot:
-    fn.plotResults(R, data, err, RgridB, y, yErr, backprojection, time)
+    fn.plotInversion(
+        R, data, err, RgridB, emissivity, emissivityErr, backprojection, time
+    )

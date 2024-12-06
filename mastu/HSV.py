@@ -103,6 +103,32 @@ def loadVignette(inputDict):
     return vignetteArgs
 
 
+def getFig(shotn, fig='mid'):
+    if fig == 'mid':
+        sigName = '/aga/hm12'
+    elif fig == 'low':
+        sigName = '/aga/hl11'
+    elif fig == 'high':
+        sigName = '/aga/hu08'
+    else:
+        print('variable fig must be a string of "mid", "low" or "high"')
+        print('defaulting to "mid"')
+    data = client.get(sigName, shotn)
+    return data.data, data.time.data
+
+
+def calcFigPressure(shotn, twant, fig='mid'):
+    data, time = getFig(shotn, fig=fig)
+    tind = findNearest(time, twant)
+    return data[tind]
+
+
+def calcFigDensity(pressure, T=300.):
+    kB = 1.380649e-23 # boltzmann hardcoded, same as scipy.constants
+    n0 = pressure / (kB * T)
+    return n0
+
+
 def vignetteFunction(xy, x0, y0, wx, wy, shape, amp, offset):
     x, y = xy
     z = np.sqrt(((x - x0) / wx) ** 2 + ((y - y0) / wy) ** 2)
@@ -248,9 +274,30 @@ def applyExposure(data, err, shotn, mult=1e-6):
     return data, err
 
 
+def mtanh(R, R0, height, width, grad, bkgd):
+    ### modified tanh function
+    z = -4. * (R - R0) / width
+    L = 1. / (1. + np.exp(-z))
+    profile = (L * (height - bkgd + ((z * width * grad) / 4.))) + bkgd
+    return profile
 
 
+def getPedestal(shotn, kind, prefix='/apf/core/mtanh/lfs/'):
+    time = client.get(prefix+'time', shotn).data
+    R0 = client.get(prefix+kind+'/pedestal_location', shotn).data
+    height = client.get(prefix+kind+'/pedestal_height', shotn).data
+    width = client.get(prefix+kind+'/pedestal_width', shotn).data
+    grad = client.get(prefix+kind+'/pedestal_top_gradient', shotn).data
+    bkgd = client.get(prefix+kind+'/background_level', shotn).data
+    return time, R0, height, width, grad, bkgd
 
+
+def getThomson(shotn, kind, prefix='/ayc/'):
+    time = client.get(prefix+'time', shotn).data
+    data = client.get(prefix+kind, shotn).data
+    err = client.get(prefix+'d'+kind, shotn).data
+    R = client.get(prefix+'R', shotn).data
+    return time, data, err, R
 
 
 
