@@ -52,9 +52,6 @@ def calcN0(
     n0 = ((4. * np.pi * emissivity) - REC) / EXC
     return n0
 
-### fLinear((profileTemp[Rind:], profileDensity[Rind:])) * scalar
-
-
 
 def FindMin(F, x0, dx0, prod, S, U, tol=0.01):
     ### stupid but robust minimum searching algorithm.
@@ -294,6 +291,16 @@ def plotInversion(R, data, err, RgridB, y, yErr, backprojection, time):
         ax.title.set_text(f'i={i:.0f}, t={time[i]:.4f}s')
         plt.tight_layout()
     plt.show()
+    return
+
+
+def plotResults():
+    import matplotlib.pyplot as plt
+    for i in range():
+        fig, ax = plt.subplots(1, 3, figsize=(6,3), dpi=150)
+        
+        ax[0].plot
+        
     return
 
 

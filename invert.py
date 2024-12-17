@@ -273,3 +273,6 @@ if plot:
     fn.plotInversion(
         R, data, err, RgridB, emissivity, emissivityErr, backprojection, time
     )
+    fn.plotResults(
+        R
+    )
