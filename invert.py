@@ -2,7 +2,7 @@
 
 ### author: Steven Thomas
 ### email:  steven.thomas@ukaea.uk; sthoma@mit.edu
-__version__ = '1.1.0'
+__version__ = '1.2.0'
 
 
 import functions as fn
@@ -67,6 +67,9 @@ kindIonise = inputDict['kindIonise']
 
 ### using a constant percentage for profile error
 percent = inputDict['percent']
+
+### temperature to assume for neutral density from fig
+figTemp = inputDict['figTemp']
 
 
 ###############################################################################
@@ -181,7 +184,7 @@ _, R0Temp, heightTemp, widthTemp, \
     gradTemp, bkgdTemp = HSV.getPedestal(shotn, 'T_e')
 
 ### make R array for profiles
-Rind = HSV.findNearest(RgridB, Rprofile0)
+Rind = fn.findNearest(RgridB, Rprofile0)
 Rprofile = RgridB[Rind:]
 
 ### make ADAS data functions
@@ -195,22 +198,29 @@ fExcite, scaleExcite, fRecomb, scaleRecomb, fIonise, scaleIonise = fn.makeADAS(
 ###############################################################################
 
 
+### make empty arrays for Thomson profiles
+profileTemp = np.zeros((nT, len(Rprofile)))
+profileDensity = np.zeros((nT, len(Rprofile)))
 ### make empty arrays for Siz, n0, and errors
 ioniseRate = np.zeros((nT, len(Rprofile)))
 ioniseErr = np.zeros((nT, len(Rprofile)))
 neutralDensity = np.zeros((nT, len(Rprofile)))
 neutralErr = np.zeros((nT, len(Rprofile)))
+### empty arrays for psiN, fig pressure, and separatrix ratio
+psiN = np.zeros((nT, len(Rprofile)))
+figN0 = np.zeros(nT)
+neutralRatio = np.zeros(nT)
 
 ### iterate over the times
 for i in range(nT):
     
     ### make profiles for this timestep
-    T = HSV.findNearest(timePed, time[i])
-    profileTemp = HSV.mtanh(
+    T = fn.findNearest(timePed, time[i])
+    profileTemp[i] = HSV.mtanh(
         Rprofile, R0Temp[T], heightTemp[T], 
         widthTemp[T], gradTemp[T], bkgdTemp[T]
     )
-    profileDensity = HSV.mtanh(
+    profileDensity[i] = HSV.mtanh(
         Rprofile, R0Density[T], heightDensity[T], 
         widthDensity[T], gradDensity[T], bkgdDensity[T]
     )
@@ -218,10 +228,27 @@ for i in range(nT):
     ### throw it into the iteration function
     ioniseRate[i], ioniseErr[i], neutralDensity[i], neutralErr[i] = \
         fn.neutrals(
-            emissivity[i,Rind:], emissivityErr[i,Rind:], profileTemp, 
-            profileDensity, fExcite, scaleExcite, fRecomb, scaleRecomb, 
+            emissivity[i,Rind:], emissivityErr[i,Rind:], profileTemp[i], 
+            profileDensity[i], fExcite, scaleExcite, fRecomb, scaleRecomb, 
             fIonise, scaleIonise, percent=percent
     )
+    
+    ### try loops to catch issues with loading HSV data
+    try:
+        ### get the fig density
+        figPressure = HSV.calcFigPressure(shotn, time[i], fig='mid')
+        figN0[i] = HSV.calcFigDensity(figPressure, T=300.)
+    except:
+        print('Unable to get fig pressure')
+    try:
+        ### get equilibrium data
+        psiN[i] = HSV.getPsiN(shotn, time[i], Rprofile, 0.)[0][0,0,:]
+        
+        ### get the separatrix n0 / ne ratio
+        sepInd = fn.findNearest(psiN[i], 1.)
+        neutralRatio[i] = (neutralDensity[i] / profileDensity[i])[sepInd]
+    except:
+        print('Unable to get psiN and/or neutral Ratio')
 
 
 ###############################################################################
@@ -247,10 +274,17 @@ if saveFile:
         emissivityErr = emissivityErr,
         backprojection = backprojection,
         scale = scale,
+        Rind = Rind,
+        Rprofile = Rprofile,
+        profileTemp = profileTemp,
+        profileDensity = profileDensity,
         ioniseRate = ioniseRate,
         ioniseErr = ioniseErr,
         neutralDensity = neutralDensity,
         neutralErr = neutralErr,
+        figN0 = figN0,
+        psiN = psiN,
+        neutralRatio = neutralRatio,
     )
     
     ### make filename for dictionary of inputs
@@ -270,9 +304,12 @@ if saveFile:
 
 
 if plot:
-    fn.plotInversion(
+    import plotFunctions as pf
+    pf.plotInversion(
         R, data, err, RgridB, emissivity, emissivityErr, backprojection, time
     )
-    fn.plotResults(
-        R
+    pf.plotResults(
+        Rprofile, emissivity[:,Rind:], emissivityErr[:,Rind:], ioniseRate,
+        ioniseErr, neutralDensity, neutralErr, time, figN0=figN0, 
+        neutralRatio=neutralRatio, psiN=psiN, 
     )

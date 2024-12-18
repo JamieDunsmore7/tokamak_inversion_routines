@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import json
+import matplotlib.pyplot as plt
 import numpy as np
 from scipy.interpolate import RegularGridInterpolator
 from scipy.linalg import eigh, solve_banded
@@ -65,6 +66,10 @@ def FindMin(F, x0, dx0, prod, S, U, tol=0.01):
         else:
             dx0 /= -2.
     return x0, np.log(fg2)
+
+
+def findNearest(arr, val):
+    return np.abs(arr - val).argmin()
 
 
 def GCV(g, prod, S, U):
@@ -266,43 +271,6 @@ def neutrals(
     )
     return ioniseRate, ioniseError, neutralDensity, neutralErr
     
-
-def plotInversion(R, data, err, RgridB, y, yErr, backprojection, time):
-    import matplotlib.pyplot as plt
-    for i in range(data.shape[0]):
-        fig, ax = plt.subplots(1, 1, figsize=(3.5,3), dpi=150)
-        ax.plot(R, data[i], '-', c='k', zorder=3, label='raw RBA')
-        ax.fill_between(
-            R, data[i]-err[i], data[i]+err[i], color='k', alpha=0.2
-        )
-        ax.plot(RgridB, y[i], '-', c='C0', zorder=2, label='inversion')
-        ax.fill_between(
-            RgridB, y[i]-yErr[i], y[i]+yErr[i], color='C0', alpha=0.2, zorder=2
-        )
-        ax.plot(R, backprojection[i,:], c='C2', zorder=4, label='reconst. RBA')
-        xplot = [0.2,1.875]
-        ax.set_xlim(xplot)
-        ax.plot(xplot, [0.,0.], '-k', lw=0.8, zorder=1)
-        ax.set_xlabel('R (m)', fontsize=9)
-        ax.set_ylabel('Units', fontsize=9)
-        ax.legend(fancybox=1, framealpha=1, fontsize=8)
-        ax.tick_params(axis="both", which='both', labelsize=9, direction='in', 
-                    left=True, bottom=True, right=True, top=True)
-        ax.title.set_text(f'i={i:.0f}, t={time[i]:.4f}s')
-        plt.tight_layout()
-    plt.show()
-    return
-
-
-def plotResults():
-    import matplotlib.pyplot as plt
-    for i in range():
-        fig, ax = plt.subplots(1, 3, figsize=(6,3), dpi=150)
-        
-        ax[0].plot
-        
-    return
-
 
 def prepR(R0, rEnd):
     goodChans = np.ones(len(R0)).astype(bool)

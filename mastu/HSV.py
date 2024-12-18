@@ -1,13 +1,12 @@
 import calcam
 import cv2
+from functions import findNearest
+import matplotlib.pyplot as plt
+from matplotlib.ticker import AutoMinorLocator
 import numpy as np
 import pyuda
 client = pyuda.Client()
 from scipy.special import ndtr
-
-
-def findNearest(arr, val):
-    return np.abs(arr - val).argmin()
 
 
 def get(shotn, trange=[-1.,-1.], tind=None):
@@ -298,6 +297,49 @@ def getThomson(shotn, kind, prefix='/ayc/'):
     err = client.get(prefix+'d'+kind, shotn).data
     R = client.get(prefix+'R', shotn).data
     return time, data, err, R
+
+
+
+def getPsiN(shotn, t, R, z):
+    """
+    Find normalised flux surfaces in MAST/MAST-U for a specified
+    shot. shotn should be an integer, t, R, and z can be floats
+    or array-like.
+    psiN is returned with shape according to (nz, nR, nt)
+    """
+    from pyEquilibrium.equilibrium import equilibrium as equil
+    if shotn >= 45177:          # decide on which device needed
+        device = 'MASTU'
+    else:
+        device = 'MAST'
+    # make t, R and z the right types and shapes
+    if isinstance(t ,float):
+        t = np.array([t])
+    Nt = len(t)
+    # if Nt > 1:
+    #     if np.diff(t).mean() < dt:
+    #         t = t[::int(dt / roundSF(np.diff(t).mean(), 2))]
+    #         Nt = len(t)
+    if isinstance(R, float):
+        R = np.array([[R]])
+    if isinstance(z, float):
+        z = np.array([[z]])
+    if R.ndim == 2 and z.ndim == 2 and R.shape == z.shape:
+        N1 = R.shape[0]
+        N2 = R.shape[1]
+    else:
+        R, z = np.meshgrid(R, z)
+        N1 = R.shape[0]
+        N2 = R.shape[1]
+    psiN = np.zeros((Nt, N1, N2)) # empty psiN, then find it
+    for i in range(0, Nt):
+        equi = equil(device=device, shot=shotn, time=t[i])
+        for j in range(0, N1):
+            for k in range(0, N2):
+                psiN[i,j,k] = equi.psiN(R[j,k], z[j,k])
+    return psiN, t
+
+
 
 
 

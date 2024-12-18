@@ -54,5 +54,7 @@
     "kindRecomb": "cubic",
     "kindIonise": "linear",
 
-    "percent": 0.1
+    "percent": 0.1,
+
+    "figTemp": 300.0
 }
