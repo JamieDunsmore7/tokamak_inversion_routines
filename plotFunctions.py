@@ -5,7 +5,9 @@ import numpy as np
 
 
 ### function for plotting inversion with reconstruction and raw-data
-def plotInversion(R, data, err, RgridB, y, yErr, backprojection, time):
+def plotInversion(
+    R, data, err, RgridB, y, yErr, backprojection, time, savePath=None
+    ):
     for i in range(data.shape[0]):
         fig, ax = plt.subplots(1, 1, figsize=(3.5,3), dpi=150)
         ax.plot(R, data[i], '-', c='k', zorder=3, label='raw RBA')
@@ -28,6 +30,8 @@ def plotInversion(R, data, err, RgridB, y, yErr, backprojection, time):
                     left=True, bottom=True, right=True, top=True)
         ax.set_title(f'i={i:.0f}, t={time[i]:.4f}s', fontsize=10)
         plt.tight_layout()
+        if savePath:
+            plt.savefig(savePath + f'{time[i]:.4f}s.png')
     # plt.show()
     return
 
@@ -35,7 +39,7 @@ def plotInversion(R, data, err, RgridB, y, yErr, backprojection, time):
 ### function for plotting emissivity, Siz, and n0
 def plotResults(
     R, emiss, emissErr, Siz, SizErr, n0, n0Err, time, figN0=None, 
-    neutralRatio=None, psiN=None, yMult=1.1, xlim=[1.25,1.50]
+    neutralRatio=None, psiN=None, yMult=1.1, xlim=[1.25,1.50], savePath=None
     ):
     Rind = findNearest(R, xlim[1])
     if psiN is None:
@@ -123,5 +127,90 @@ def plotResults(
         
         fig.suptitle(f'i={i:.0f}, t={time[i]:.4f}s', fontsize=10)
         plt.tight_layout()
-    plt.show()
+        if savePath:
+            plt.savefig(savePath + f'{time[i]:.4f}s.png')
+    # plt.show()
     return
+
+
+###############################################################################
+###                          if the script is run                           ###
+###############################################################################
+
+
+if __name__ == "__main__":
+    
+    ### define where I will save the figures
+    savePath0 = '/home/sthoma/Documents/Plots/rba/'
+    
+    
+    ### do the stuff for the loading and plotting of the results
+    import sys
+    resultsFile = sys.argv[1]
+    try:
+        show = bool(sys.argv[2])
+    except IndexError:
+        show = False
+    try:
+        I = int(sys.argv[3])
+    except IndexError:
+        I = 0
+    try:
+        J = int(sys.argv[4])
+        if J == 0:
+            J = None
+    except IndexError:
+        J = None
+    
+    
+    
+    ### make folders to save plots
+    import os
+    savePath = \
+        f"{savePath0}/{resultsFile.split('/')[-2]}/" + \
+        f"{resultsFile.split('/')[-1][:-4]}/"
+    savePathInversion = savePath + "inversion/"
+    if not os.path.exists(savePathInversion):
+        os.makedirs(savePathInversion)
+    savePathResults = savePath + "emissIoniseNeutral/"
+    if not os.path.exists(savePathResults):
+        os.makedirs(savePathResults)
+        
+    
+    ### load the results
+    results = np.load(resultsFile)
+    R = results['R']
+    data = results['data']
+    err = results['err']
+    time = results['time']
+    # Rgrid = results['Rgrid']
+    RgridB = results['RgridB']
+    emissivity = results['emissivity']
+    emissivityErr = results['emissivityErr']
+    backprojection = results['backprojection']
+    # scale = results['scale']
+    Rind = results['Rind']
+    Rprofile = results['Rprofile']
+    # profileTemp = results['profileTemp']
+    # profileDensity = results['profileDensity']
+    ioniseRate = results['ioniseRate']
+    ioniseErr = results['ioniseErr']
+    neutralDensity = results['neutralDensity']
+    neutralErr = results['neutralErr']
+    figN0 = results['figN0']
+    psiN = results['psiN']
+    neutralRatio = results['neutralRatio']
+    
+    
+    ### call the plotting functions
+    plotInversion(
+        R, data[I:J], err[I:J], RgridB, emissivity[I:J], emissivityErr[I:J], 
+        backprojection[I:J], time[I:J], savePath=savePathInversion, 
+    )
+    plotResults(
+        Rprofile, emissivity[I:J,Rind:], emissivityErr[I:J,Rind:], 
+        ioniseRate[I:J], ioniseErr[I:J], neutralDensity[I:J], neutralErr[I:J], 
+        time[I:J], figN0=figN0[I:J], neutralRatio=neutralRatio[I:J], 
+        psiN=psiN[I:J], savePath=savePathResults, 
+    )
+    

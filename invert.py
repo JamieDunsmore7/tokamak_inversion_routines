@@ -2,7 +2,7 @@
 
 ### author: Steven Thomas
 ### email:  steven.thomas@ukaea.uk; sthoma@mit.edu
-__version__ = '1.2.0'
+__version__ = '1.3.0'
 
 
 import functions as fn
@@ -313,3 +313,5 @@ if plot:
         ioniseErr, neutralDensity, neutralErr, time, figN0=figN0, 
         neutralRatio=neutralRatio, psiN=psiN, 
     )
+    from matplotlib.pyplot import show
+    show()

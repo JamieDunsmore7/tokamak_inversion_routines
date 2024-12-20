@@ -235,7 +235,8 @@ def makeFName(saveDir, shotn, saveFile):
     
     fname = f'{saveStr}{saveFile}'
     while os.path.isfile(fname):
-        fname = fname.replace('.', '(1).')
+        # fname = fname.replace('.', '(1).')
+        fname = fname.replace('.', '_1_.')
     
     return fname
 
