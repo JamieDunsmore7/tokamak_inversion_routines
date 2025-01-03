@@ -2,7 +2,7 @@
 
 ### author: Steven Thomas
 ### email:  steven.thomas@ukaea.uk; sthoma@mit.edu
-__version__ = '1.3.0'
+__version__ = '1.5.0'
 
 
 import functions as fn
@@ -121,9 +121,6 @@ if photons:
     data, err = HSV.applyCalibration(data, err, inputDict)
 
 ### convert to ph m^-2 sr^-1 s^-1
-# exposureTime = HSV.getExposure(shotn, mult=exposureMult)
-# data /= exposureTime
-# err /= exposureTime
 data, err = HSV.applyExposure(data, err, shotn, mult=exposureMult)
 
 ### apply vignette function
@@ -139,7 +136,7 @@ scale = fn.makeScale(data)
 
 
 ###############################################################################
-###                     doing the brunt of the work here                    ###
+###                      doing the main inversion here                      ###
 ###############################################################################
 
 
@@ -151,6 +148,13 @@ emissivityErr = np.zeros((nT, nGrid-1))
 chi2 = np.zeros(nT)
 gamma = np.zeros(nT)
 backprojection = np.zeros((nT, nR))
+### measurements of the emissivity profile
+emMax = np.zeros(nT)
+emMaxR = np.zeros(nT)
+emR0 = np.zeros(nT)
+emR1 = np.zeros(nT)
+emFWHM = np.zeros(nT)
+emFWHMerr = np.zeros(nT)
 
 ### arrays of indices, used in each iteration
 indLos = slice(0, nR)
@@ -167,9 +171,24 @@ for i in range(nT):
             nFisher=nFisher, regGuess=regGuess, regMin=regMin
     )
 
-### multiply the answers by scale
-emissivity *= scale
-emissivityErr *= scale
+    ### multiply the answers by scale
+    emissivity[i] *= scale
+    emissivityErr[i] *= scale
+    
+    ### find the emissivity maximum and location
+    emMax[i] = emissivity[i].max()
+    emInd = emissivity[i].argmax()
+    emMaxR[i] = RgridB[emInd]
+    
+    ### calculate the emissivity FWHM
+    emR0[i], emR1[i] = fn.findPosition(
+        RgridB, emissivity[i], 0.5, kind='linear'
+    )
+    emFWHM[i] = emR1[i] - emR0[i]
+    emFWHMerr[i] = fn.findPositionErr(
+        RgridB, emissivity[i], emissivityErr[i], 0.5, x0=emR0[i], x1=emR1[i], 
+        kind='linear'
+    )
 
 
 ###############################################################################
@@ -274,6 +293,12 @@ if saveFile:
         emissivityErr = emissivityErr,
         backprojection = backprojection,
         scale = scale,
+        emMax = emMax,
+        emMaxR = emMaxR,
+        emR0 = emR0,
+        emR1 = emR1,
+        emFWHM = emFWHM,
+        emFWHMerr = emFWHMerr,
         Rind = Rind,
         Rprofile = Rprofile,
         profileTemp = profileTemp,
@@ -306,12 +331,13 @@ if saveFile:
 if plot:
     import plotFunctions as pf
     pf.plotInversion(
-        R, data, err, RgridB, emissivity, emissivityErr, backprojection, time
+        R, data, err, RgridB, emissivity, emissivityErr, backprojection, time, 
+        emMaxR, emMax, emR0, emR1, emFWHM, emFWHMerr,
     )
     pf.plotResults(
-        Rprofile, emissivity[:,Rind:], emissivityErr[:,Rind:], ioniseRate,
-        ioniseErr, neutralDensity, neutralErr, time, figN0=figN0, 
-        neutralRatio=neutralRatio, psiN=psiN, 
+        Rprofile, emissivity[:,Rind:], emissivityErr[:,Rind:], emMaxR, emMax, 
+        emR0, emR1, emFWHM, emFWHMerr, ioniseRate, ioniseErr, neutralDensity, 
+        neutralErr, time, figN0=figN0, neutralRatio=neutralRatio, psiN=psiN, 
     )
     from matplotlib.pyplot import show
     show()

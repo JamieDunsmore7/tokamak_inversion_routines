@@ -72,6 +72,32 @@ def findNearest(arr, val):
     return np.abs(arr - val).argmin()
 
 
+def findPosition(x, y, mult, kind='exp'):
+    """
+    kind must be either 'linear' or 'exp'
+    """
+    ind = y.argmax()
+    yMax = y[ind]
+    if kind == 'exp':
+        cutoff = yMax * np.exp(mult)
+    elif kind == 'linear': 
+        cutoff = yMax * mult
+    xVal0 = np.interp(cutoff, y[:ind+1], x[:ind+1])
+    xVal1 = np.interp(cutoff, y[ind:][::-1], x[ind:][::-1])
+    return xVal0, xVal1
+
+
+def findPositionErr(x, y, yErr, mult, x0=None, x1=None, kind='exp'):
+    xA, xB = findPosition(x, y+yErr, mult, kind=kind)
+    xa, xb = findPosition(x, y-yErr, mult, kind=kind)
+    if (x0 is None) or (x1 is None):
+        x0, x1 = findPosition(x, y, mult, kind=kind)
+    x0Err = np.max([abs(x0-xA), abs(x0-xa)])
+    x1Err = np.max([abs(x1-xB), abs(x1-xB)])
+    err = np.sqrt(x0Err**2 + x1Err**2)
+    return err
+
+
 def GCV(g, prod, S, U):
     ### generalized crossvalidation
     w = 1. / (1. + np.exp(g) / S**2)
@@ -226,7 +252,7 @@ def makeGrid(R, nGrid):
 
 def makeFName(saveDir, shotn, saveFile):
     ### creates directory if needed
-    ### iterates filename to stop oversaving
+    ### iterates filename to stop overwriting
     import os
     
     saveStr = f'{saveDir}{shotn}/'
@@ -234,9 +260,17 @@ def makeFName(saveDir, shotn, saveFile):
         os.makedirs(saveStr)
     
     fname = f'{saveStr}{saveFile}'
-    while os.path.isfile(fname):
-        # fname = fname.replace('.', '(1).')
-        fname = fname.replace('.', '_1_.')
+    if os.path.isfile(fname):
+        count = 1
+        fname = fname.replace('.', f'_{count}.')
+        while os.path.isfile(fname):
+            check = f'_{count}.'
+            count += 1
+            replace = f'_{count}.'
+            fname = fname.replace(check, replace)
+    # while os.path.isfile(fname):
+    #     # fname = fname.replace('.', '(1).')
+    #     fname = fname.replace('.', '_1.')
     
     return fname
 

@@ -6,7 +6,8 @@ import numpy as np
 
 ### function for plotting inversion with reconstruction and raw-data
 def plotInversion(
-    R, data, err, RgridB, y, yErr, backprojection, time, savePath=None
+    R, data, err, RgridB, y, yErr, backprojection, time, Rmax, yMax, R0, R1, 
+    fwhm, fwhmErr, savePath=None
     ):
     for i in range(data.shape[0]):
         fig, ax = plt.subplots(1, 1, figsize=(3.5,3), dpi=150)
@@ -19,6 +20,16 @@ def plotInversion(
             RgridB, y[i]-yErr[i], y[i]+yErr[i], color='C0', alpha=0.2, zorder=2
         )
         ax.plot(R, backprojection[i,:], c='C2', zorder=4, label='reconst. RBA')
+        ax.plot([R0[i], R1[i]], [yMax[i]/2., yMax[i]/2.], '-k', lw=0.8)
+        ax.text(
+            Rmax[i]*0.99, yMax[i], f'$R_\\mathrm{{max}}$\n{Rmax[i]:.3f}m', 
+            ha='right', va='center', fontsize=8
+        )
+        ax.text(
+            R1[i]*1.01, yMax[i]/2., 
+            f'FWHM\n{fwhm[i]*100:.2f}$\\pm$\n{fwhmErr[i]*100:.2f}cm', 
+            ha='left', va='center', fontsize=8
+        )
         xplot = [0.2,1.875]
         ax.set_xlim(xplot)
         ax.plot(xplot, [0.,0.], '-k', lw=0.8, zorder=1)
@@ -32,14 +43,14 @@ def plotInversion(
         plt.tight_layout()
         if savePath:
             plt.savefig(savePath + f'{time[i]:.4f}s.png')
-    # plt.show()
     return
 
 
 ### function for plotting emissivity, Siz, and n0
 def plotResults(
-    R, emiss, emissErr, Siz, SizErr, n0, n0Err, time, figN0=None, 
-    neutralRatio=None, psiN=None, yMult=1.1, xlim=[1.25,1.50], savePath=None
+    R, emiss, emissErr, emMaxR, emMax, emR0, emR1, emFWHM, emFWHMerr, Siz, 
+    SizErr, n0, n0Err, time, figN0=None, neutralRatio=None, psiN=None, 
+    yMult=1.1, xlim=[1.25,1.50], n0lim=1e14, savePath=None
     ):
     Rind = findNearest(R, xlim[1])
     if psiN is None:
@@ -53,6 +64,17 @@ def plotResults(
         ax[0].fill_between(
             R, emiss[i]-emissErr[i], 
             emiss[i]+emissErr[i], color='C0', alpha=0.3
+        )
+        
+        ax[i].plot([emR0[i], emR1[i]], [emMax[i]/2., emMax[i]/2.], '-k', lw=0.8)
+        ax[i].text(
+            emMaxR[i]*0.99, emMax[i], f'$R_\\mathrm{{max}}$\n{emMaxR[i]:.3f}m', 
+            ha='right', va='center', fontsize=8
+        )
+        ax[i].text(
+            (emR0[i]+emR1[i])/2., 0.98*emMax[i]/2., 
+            f'FWHM\n{emFWHM[i]*100:.2f}$\\pm$\n{emFWHMerr[i]*100:.2f}cm', 
+            ha='center', va='top', fontsize=8
         )
         ax[0].set_title('Emissivity', fontsize=9)
         ax[0].set_xlabel('$R$ (m)')
@@ -81,17 +103,18 @@ def plotResults(
         ax[2].set_ylabel('$n_0$ (m$^{-3}$)')
         ax[2].yaxis.get_offset_text().set_size(9)
         ax[2].set_ylim([
-            n0[i,:Rind].min() / yMult, (n0[i] + n0Err[i]).max() * yMult
+            np.max((n0[i,:Rind].min() / yMult, n0lim)), 
+            (n0[i] + n0Err[i]).max() * yMult
         ])
         ax[2].set_yscale('log')
-        if neutralRatio:
+        if neutralRatio is not None:
             ax[2].text(
                 xlim[0], n0[i].max(), 
                 f'$n_{{0,\\mathrm{{fig}}}}$=\n{figN0[i]:.2g}m$^{{-3}}$\n' + \
                 f'$(n_0/n_e)_\\mathrm{{sep}}$=\n{neutralRatio[i]:.4f}', 
                 color='k', fontsize=8, va='top', ha='left'
             )
-        elif figN0:
+        elif figN0 is not None:
             ax[2].text(
                 xlim[0], n0[i].max(), 
                 f'$n_{{0,\\mathrm{{fig}}}}$=\n{figN0[i]:.2g}m$^{{-3}}$\n', 
@@ -129,7 +152,6 @@ def plotResults(
         plt.tight_layout()
         if savePath:
             plt.savefig(savePath + f'{time[i]:.4f}s.png')
-    # plt.show()
     return
 
 
@@ -142,8 +164,8 @@ if __name__ == "__main__":
     
     ### define where I will save the figures
     savePath0 = '/home/sthoma/Documents/Plots/rba/'
-    
-    
+
+
     ### do the stuff for the loading and plotting of the results
     import sys
     resultsFile = sys.argv[1]
@@ -161,9 +183,8 @@ if __name__ == "__main__":
             J = None
     except IndexError:
         J = None
-    
-    
-    
+
+
     ### make folders to save plots
     import os
     savePath = \
@@ -175,8 +196,8 @@ if __name__ == "__main__":
     savePathResults = savePath + "emissIoniseNeutral/"
     if not os.path.exists(savePathResults):
         os.makedirs(savePathResults)
-        
-    
+
+
     ### load the results
     results = np.load(resultsFile)
     R = results['R']
@@ -189,6 +210,12 @@ if __name__ == "__main__":
     emissivityErr = results['emissivityErr']
     backprojection = results['backprojection']
     # scale = results['scale']
+    emMax = results['emMax']
+    emMaxR = results['emMaxR']
+    emR0 = results['emR0']
+    emR1 = results['emR1']
+    emFWHM = results['emFWHM']
+    emFWHMerr = results['emFWHMerr']
     Rind = results['Rind']
     Rprofile = results['Rprofile']
     # profileTemp = results['profileTemp']
@@ -200,17 +227,22 @@ if __name__ == "__main__":
     figN0 = results['figN0']
     psiN = results['psiN']
     neutralRatio = results['neutralRatio']
-    
-    
+
+
     ### call the plotting functions
     plotInversion(
         R, data[I:J], err[I:J], RgridB, emissivity[I:J], emissivityErr[I:J], 
-        backprojection[I:J], time[I:J], savePath=savePathInversion, 
+        backprojection[I:J], time[I:J], emMaxR[I:J], emMax[I:J], emR0[I:J], 
+        emR1[I:J], emFWHM[I:J], emFWHMerr[I:J], savePath=savePathInversion, 
     )
     plotResults(
         Rprofile, emissivity[I:J,Rind:], emissivityErr[I:J,Rind:], 
-        ioniseRate[I:J], ioniseErr[I:J], neutralDensity[I:J], neutralErr[I:J], 
-        time[I:J], figN0=figN0[I:J], neutralRatio=neutralRatio[I:J], 
-        psiN=psiN[I:J], savePath=savePathResults, 
+        emMaxR[I:J], emMax[I:J], emR0[I:J], emR1[I:J], emFWHM[I:J], 
+        emFWHMerr[I:J], ioniseRate[I:J], ioniseErr[I:J], neutralDensity[I:J], 
+        neutralErr[I:J], time[I:J], figN0=figN0[I:J], 
+        neutralRatio=neutralRatio[I:J], psiN=psiN[I:J], 
+        savePath=savePathResults, 
     )
+    if show:
+        plt.show()
     
