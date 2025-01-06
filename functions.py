@@ -88,13 +88,18 @@ def findPosition(x, y, mult, kind='exp'):
 
 
 def findPositionErr(x, y, yErr, mult, x0=None, x1=None, kind='exp'):
-    xA, xB = findPosition(x, y+yErr, mult, kind=kind)
-    xa, xb = findPosition(x, y-yErr, mult, kind=kind)
     if (x0 is None) or (x1 is None):
         x0, x1 = findPosition(x, y, mult, kind=kind)
-    x0Err = np.max([abs(x0-xA), abs(x0-xa)])
-    x1Err = np.max([abs(x1-xB), abs(x1-xB)])
-    err = np.sqrt(x0Err**2 + x1Err**2)
+    xA, xB = findPosition(x, y+yErr, mult, kind=kind)
+    xa, xb = findPosition(x, y-yErr, mult, kind=kind)
+    if kind == 'exp':
+        x0Err = np.sqrt(np.sum([abs(x0-xA)**2, abs(x0-xa)**2]))
+        x1Err = np.sqrt(np.sum([abs(x1-xB)**2, abs(x1-xb)**2]))
+        err = (x0Err, x1Err)
+    elif kind == 'linear':
+        x0Err = np.max([abs(x0-xA), abs(x0-xa)])
+        x1Err = np.max([abs(x1-xB), abs(x1-xb)])
+        err = np.sqrt(x0Err**2 + x1Err**2)
     return err
 
 

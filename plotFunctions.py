@@ -48,9 +48,11 @@ def plotInversion(
 
 ### function for plotting emissivity, Siz, and n0
 def plotResults(
-    R, emiss, emissErr, emMaxR, emMax, emR0, emR1, emFWHM, emFWHMerr, Siz, 
-    SizErr, n0, n0Err, time, figN0=None, neutralRatio=None, psiN=None, 
-    yMult=1.1, xlim=[1.25,1.50], n0lim=1e14, savePath=None
+    R, emiss, emissErr, emMaxR, emMax, emR0, emR1, emFWHM, emFWHMerr, Siz,
+    SizErr, SizMax, SizMaxR, SizR0, SizR1, SizFWHM, SizFWHMerr, n0, n0Err,
+    n0Max, n0MaxR, n0R1, n0R2, n0R3, n0w1, n0w1err, n0w2, n0w2err, n0w3, 
+    n0w3err, n0R1A, n0R2A, n0R3A, time, figN0=None, neutralRatio=None, 
+    psiN=None, yMult=1.1, xlim=[1.25,1.50], n0lim=1e14, savePath=None
     ):
     Rind = findNearest(R, xlim[1])
     if psiN is None:
@@ -65,13 +67,15 @@ def plotResults(
             R, emiss[i]-emissErr[i], 
             emiss[i]+emissErr[i], color='C0', alpha=0.3
         )
-        
-        ax[i].plot([emR0[i], emR1[i]], [emMax[i]/2., emMax[i]/2.], '-k', lw=0.8)
-        ax[i].text(
-            emMaxR[i]*0.99, emMax[i], f'$R_\\mathrm{{max}}$\n{emMaxR[i]:.3f}m', 
+        ax[0].plot(
+            [emR0[i], emR1[i]], [emMax[i]/2., emMax[i]/2.], '-k', lw=0.8
+        )
+        ax[0].text(
+            emMaxR[i]*0.99, emMax[i], 
+            f'$R_\\mathrm{{max}}$\n{emMaxR[i]:.3f}m',
             ha='right', va='center', fontsize=8
         )
-        ax[i].text(
+        ax[0].text(
             (emR0[i]+emR1[i])/2., 0.98*emMax[i]/2., 
             f'FWHM\n{emFWHM[i]*100:.2f}$\\pm$\n{emFWHMerr[i]*100:.2f}cm', 
             ha='center', va='top', fontsize=8
@@ -87,6 +91,20 @@ def plotResults(
         ax[1].fill_between(
             R, Siz[i]-SizErr[i], Siz[i]+SizErr[i], color='C1', alpha=0.3
         )
+        ax[1].plot(
+            [SizR0[i], SizR1[i]], [SizMax[i]/2., SizMax[i]/2.], '-k', lw=0.8
+        )
+        ax[1].text(
+            SizMaxR[i]*0.99, SizMax[i], 
+            f'$R_\\mathrm{{max}}$\n{SizMaxR[i]:.3f}m', 
+            ha='right', va='center', fontsize=8
+        )
+        ax[1].text(
+            (SizR0[i]+SizR1[i])/2., 0.98*SizMax[i]/2., 
+            f'FWHM\n{SizFWHM[i]*100:.2f}$\\pm$\n{SizFWHMerr[i]*100:.2f}cm', 
+            ha='center', va='top', fontsize=8
+        )
+        
         ax[1].set_title('Ionisation rate', fontsize=9)
         ax[1].set_xlabel('$R$ (m)')
         ax[1].set_ylabel('$S_\\mathrm{iz}$ (m$^{-3}$ s$^{-1}$)')
@@ -98,25 +116,65 @@ def plotResults(
         ax[2].fill_between(
             R, n0[i]-n0Err[i], n0[i]+n0Err[i], color='C2', alpha=0.3
         )
+        ylim = [
+            np.max((n0[i,:Rind].min() / yMult, n0lim)), 
+            (n0[i] + n0Err[i]).max() * yMult
+        ]
+        ax[2].plot(xlim, [n0Max[i],n0Max[i]], '-', c='C0', lw=0.8)
+        ax[2].plot(
+            [n0MaxR[i],n0MaxR[i]], [ylim[0],n0Max[i]], '-', c='C0', lw=0.8
+        )
+        ax[2].text(
+            n0MaxR[i], n0Max[i], 
+            f'{n0MaxR[i]:.3f}m\n{n0Max[i]:.2g}m$^{{-3}}$', 
+            c='C0', fontsize=8, ha='right', va='top'
+        )
+        yVal = n0Max[i] * np.exp(-1.)
+        ax[2].plot([xlim[0],n0R1[i]], [yVal,yVal], '-', c='C1', lw=0.8)
+        ax[2].plot([n0R1[i],n0R1[i]], [ylim[0],yVal], '-', c='C1', lw=0.8)
+        ax[2].text(
+            n0R1[i], yVal, 
+            f'{n0w1[i]*100.:.1f}$\\pm${n0w1err[i]*100.:.1f}cm', 
+            c='C1', fontsize=8, ha='right', va='top'
+        )
+        ax[2].plot([n0R1A[i],xlim[1]], [yVal,yVal], '--', c='C1', lw=0.8)
+        ax[2].plot([n0R1A[i],n0R1A[i]], [ylim[0],yVal], '--', c='C1', lw=0.8)
+        yVal = n0Max[i] * np.exp(-2.)
+        ax[2].plot([xlim[0],n0R2[i]], [yVal,yVal], '-', c='C3', lw=0.8)
+        ax[2].plot([n0R2[i],n0R2[i]], [ylim[0],yVal], '-', c='C3', lw=0.8)
+        ax[2].text(
+            n0R2[i], yVal, 
+            f'{n0w2[i]*100.:.1f}$\\pm${n0w2err[i]*100.:.1f}cm', 
+            c='C3', fontsize=8, ha='right', va='top'
+        )
+        ax[2].plot([n0R2A[i],xlim[1]], [yVal,yVal], '--', c='C3', lw=0.8)
+        ax[2].plot([n0R2A[i],n0R2A[i]], [ylim[0],yVal], '--', c='C3', lw=0.8)
+        yVal = n0Max[i] * np.exp(-3.)
+        ax[2].plot([xlim[0],n0R3[i]], [yVal,yVal], '-', c='C4', lw=0.8)
+        ax[2].plot([n0R3[i],n0R3[i]], [ylim[0],yVal], '-', c='C4', lw=0.8)
+        ax[2].text(
+            n0R3[i], yVal, 
+            f'{n0w3[i]*100.:.1f}$\\pm${n0w3err[i]*100.:.1f}cm', 
+            c='C4', fontsize=8, ha='right', va='top'
+        )
+        ax[2].plot([n0R3A[i],xlim[1]], [yVal,yVal], '--', c='C4', lw=0.8)
+        ax[2].plot([n0R3A[i],n0R3A[i]], [ylim[0],yVal], '--', c='C4', lw=0.8)
         ax[2].set_title('Neutral density', fontsize=9)
         ax[2].set_xlabel('$R$ (m)')
         ax[2].set_ylabel('$n_0$ (m$^{-3}$)')
         ax[2].yaxis.get_offset_text().set_size(9)
-        ax[2].set_ylim([
-            np.max((n0[i,:Rind].min() / yMult, n0lim)), 
-            (n0[i] + n0Err[i]).max() * yMult
-        ])
+        ax[2].set_ylim(ylim)
         ax[2].set_yscale('log')
         if neutralRatio is not None:
             ax[2].text(
-                xlim[0], n0[i].max(), 
+                n0MaxR[i], n0Max[i], 
                 f'$n_{{0,\\mathrm{{fig}}}}$=\n{figN0[i]:.2g}m$^{{-3}}$\n' + \
                 f'$(n_0/n_e)_\\mathrm{{sep}}$=\n{neutralRatio[i]:.4f}', 
                 color='k', fontsize=8, va='top', ha='left'
             )
         elif figN0 is not None:
             ax[2].text(
-                xlim[0], n0[i].max(), 
+                n0MaxR[i], n0Max[i], 
                 f'$n_{{0,\\mathrm{{fig}}}}$=\n{figN0[i]:.2g}m$^{{-3}}$\n', 
                 color='k', fontsize=8, va='top', ha='left'
             )
@@ -224,6 +282,32 @@ if __name__ == "__main__":
     ioniseErr = results['ioniseErr']
     neutralDensity = results['neutralDensity']
     neutralErr = results['neutralErr']
+    ioniseMax = results['ioniseMax']
+    ioniseMaxR = results['ioniseMaxR']
+    ioniseR0 = results['ioniseR0']
+    ioniseR1 = results['ioniseR1']
+    ioniseFWHM = results['ioniseFWHM']
+    ioniseFWHMerr = results['ioniseFWHMerr']
+    neutralMax = results['neutralMax']
+    neutralMaxR = results['neutralMaxR']
+    neutralR1 = results['neutralR1']
+    neutralR2 = results['neutralR2']
+    neutralR3 = results['neutralR3']
+    neutralWidth1 = results['neutralWidth1']
+    neutralWidth1err = results['neutralWidth1err']
+    neutralWidth2 = results['neutralWidth2']
+    neutralWidth2err = results['neutralWidth2err']
+    neutralWidth3 = results['neutralWidth3']
+    neutralWidth3err = results['neutralWidth3err']
+    neutralR1A = results['neutralR1A']
+    neutralR2A = results['neutralR2A']
+    neutralR3A = results['neutralR3A']
+    # neutralWidth1A = results['neutralWidth1A']
+    # neutralWidth1Aerr = results['neutralWidth1Aerr']
+    # neutralWidth2A = results['neutralWidth2A']
+    # neutralWidth2Aerr = results['neutralWidth2Aerr']
+    # neutralWidth3A = results['neutralWidth3A']
+    # neutralWidth3Aerr = results['neutralWidth3Aerr']
     figN0 = results['figN0']
     psiN = results['psiN']
     neutralRatio = results['neutralRatio']
@@ -238,8 +322,14 @@ if __name__ == "__main__":
     plotResults(
         Rprofile, emissivity[I:J,Rind:], emissivityErr[I:J,Rind:], 
         emMaxR[I:J], emMax[I:J], emR0[I:J], emR1[I:J], emFWHM[I:J], 
-        emFWHMerr[I:J], ioniseRate[I:J], ioniseErr[I:J], neutralDensity[I:J], 
-        neutralErr[I:J], time[I:J], figN0=figN0[I:J], 
+        emFWHMerr[I:J], ioniseRate[I:J], ioniseErr[I:J], ioniseMax[I:J], 
+        ioniseMaxR[I:J], ioniseR0[I:J], ioniseR1[I:J], ioniseFWHM[I:J], 
+        ioniseFWHMerr[I:J], neutralDensity[I:J], neutralErr[I:J], 
+        neutralMax[I:J], neutralMaxR[I:J], neutralR1[I:J], neutralR2[I:J], 
+        neutralR3[I:J], neutralWidth1[I:J], neutralWidth1err[I:J], 
+        neutralWidth2[I:J], neutralWidth2err[I:J], neutralWidth3[I:J], 
+        neutralWidth3err[I:J], neutralR1A[I:J], neutralR2A[I:J], 
+        neutralR3A[I:J], time[I:J], figN0=figN0[I:J], 
         neutralRatio=neutralRatio[I:J], psiN=psiN[I:J], 
         savePath=savePathResults, 
     )
