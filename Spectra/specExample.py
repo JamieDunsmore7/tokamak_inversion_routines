@@ -4,6 +4,7 @@ import numpy as np
 import pyuda
 from scipy.optimize import curve_fit
 
+
 ### function for loading all the spectrometer channels, 5 in total
 def getSpec(shotn, wl='linear'):
     if wl == 662:
@@ -20,6 +21,7 @@ def getSpec(shotn, wl='linear'):
     for i in range(0, 5):
         data[i] = client.get('/XSM/MSE/SPEC/CH'+str(i).zfill(2), shotn).data
     return time, data, px
+
 
 ### define a bunch of functions that we can fit to the data depending on the
 ### number of peaks
@@ -57,12 +59,17 @@ def func7(x, A1, x01, s1, A2, x02, s2, A3, x03, s3, A4, x04, s4, A5, x05, s5, A6
         gaussian(x, A7, x07, s7) + C
     return y
 
+
 def findNearest(arr, val):
     return np.abs(arr - val).argmin()
+
 
 ### load the transmission curve of the two filters as provided by andover.
 ### if you're not on freia and don't have access to these files, let me know
 filter = np.load('/home/sthoma/tokamak_inversion_routines/mastu/filterHSV.npz')
+filter_15A = np.load('/home/sthoma/tokamak_inversion_routines/mastu/filterHSV_1.5A.npz')
+filter_15B = np.load('/home/sthoma/tokamak_inversion_routines/mastu/filterHSV_1.5B.npz')
+filter_andover = np.load('/home/sthoma/tokamak_inversion_routines/mastu/filterHSV_andover.npz')
 
 
 ### example shot number
@@ -130,7 +137,12 @@ carbonlines = [657.80481,658.2876]
 fig, ax = plt.subplots(1, 1, figsize=(4,3), dpi=150)
 ax2 = ax.twinx()
 ax.vlines(carbonlines, ymin, ymax, colors='C4', linewidth=0.95, zorder=3)
-ax2.plot(filter['wavelength'], filter['transmission'], '--', c=filtercolour2, lw=filterlw, zorder=2)
+ax2.plot(filter['wavelength'], filter['transmission'], '-', c='C7', lw=filterlw, zorder=2, label='Current')
+ax2.plot(filter_15A['wavelength'], filter_15A['transmission'], '-', c='C6', lw=filterlw, zorder=2, label='1.5A')
+ax2.plot(filter_15B['wavelength'], filter_15B['transmission'], '--', c='C8', lw=filterlw, zorder=2, label='1.5B')
+ax2.plot(filter_andover['wavelength'], filter_andover['transmission'], '-', c='C9', lw=filterlw, zorder=2, label='andover')
+ax2.legend(fancybox=1, framealpha=1, loc='upper right', fontsize=8)
+
 ax.plot(x, y, '-k', zorder=3) # data
 ### plot the fits indivudually
 ax.plot(x, gaussian(x, popt0[0],popt0[1],popt0[2])+popt0[-1], '--', c='C0', zorder=4)
