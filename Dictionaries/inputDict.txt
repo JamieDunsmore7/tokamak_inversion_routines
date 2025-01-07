@@ -1,6 +1,6 @@
 {
     "shotn": 49091,
-    "Rzfile": "/home/sthoma/tokamak_inversion_routines/mastu/rba_viewing_49091.npz",
+    "Rzfile": "/home/sthoma/tokamak_inversion_routines/mastu/Coordinates/rba_viewing_49091.npz",
 
 
     "I0": 260,
@@ -9,12 +9,12 @@
     "J1": 215,
     "tend": 570,
     "raverage": 0,
-    "taverage": 10,
+    "taverage": 1,
     "T0": 500,
     "T1": 501,
 
 
-    "saveFile": "testing_newRz.npz",
+    "saveFile": "rba_results.npz",
 
 
     "photons": 1,
