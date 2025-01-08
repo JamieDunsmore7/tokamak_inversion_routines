@@ -1,0 +1,12 @@
+Traceback (most recent call last):
+  File "/home/sthoma/tokamak_inversion_routines/./invert.py", line 276, in <module>
+    fn.neutrals(
+  File "/home/sthoma/tokamak_inversion_routines/functions.py", line 296, in neutrals
+    ioniseRate = calcSiz(
+  File "/home/sthoma/tokamak_inversion_routines/functions.py", line 14, in calcSiz
+    SCD = fIonise((temperature, density)) * scaleIonise
+  File "/home/sthoma/.local/lib/python3.9/site-packages/scipy/interpolate/_rgi.py", line 412, in __call__
+    xi, xi_shape, ndim, nans, out_of_bounds = self._prepare_xi(xi)
+  File "/home/sthoma/.local/lib/python3.9/site-packages/scipy/interpolate/_rgi.py", line 469, in _prepare_xi
+    raise ValueError("One of the requested xi is out of bounds "
+ValueError: One of the requested xi is out of bounds in dimension 0

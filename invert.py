@@ -259,7 +259,7 @@ neutralRatio = np.zeros(nT)
 
 ### iterate over the times
 for i in range(nT):
-
+    print(f'{i}/{nT}')
     ### make profiles for this timestep
     T = fn.findNearest(timePed, time[i])
     profileTemp[i] = HSV.mtanh(

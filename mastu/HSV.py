@@ -199,7 +199,14 @@ def prepData(rawData, dSlice, goodChans, flipBool, rEnd, tend, sysErr=5.):
         data = np.insert(data, data.shape[1], 0., axis=1)
     
     nR = data.shape[1]
-    background = np.mean(data[tend:,:], axis=0, keepdims=True)
+    ### amendment 8thJan2025
+    ### takes into account long plasmas
+    if (tend != -1) and (tend < (data.shape[0]-1)):
+        background = np.mean(data[tend:,:], axis=0, keepdims=True)
+    else:
+        print('No background subtraction done')
+        background = np.zeros((1,data.shape[1]))
+    ### end of amendment
     dataLow = data - background
     errLow = np.std(dataLow[tend:,:], axis=0, keepdims=True) / 3.
     ind1 = np.r_[1,0:nR-1]
