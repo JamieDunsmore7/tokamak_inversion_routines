@@ -209,11 +209,13 @@ def loadDict(dictFile):
 
 
 def loadADAS(line='dalpha'):
-    dir = './ADAS/'
+    # dir = './ADAS/'
+    from os.path import dirname
+    dir = str(dirname(__file__)) + '/ADAS/'
     if line == 'dalpha':
-        excite = np.load(dir + '/EXCIT_pec12#h_pju#h0.npz')
-        recomb = np.load(dir + '/RECOM_pec12#h_pju#h0.npz')
-        ionise = np.load(dir + '/IONIS_scd12h.npz')
+        excite = np.load(dir + 'EXCIT_pec12#h_pju#h0.npz')
+        recomb = np.load(dir + 'RECOM_pec12#h_pju#h0.npz')
+        ionise = np.load(dir + 'IONIS_scd12h.npz')
         Te = excite['Te'] # eV
         ne = excite['ne'] # m^-3
         dataExcite = excite['data'] # ph m^3 s^-1
@@ -223,20 +225,24 @@ def loadADAS(line='dalpha'):
 
 
 def makeADAS(
-    line='dalpha', excite='cubic', recomb='cubic', ionise='linear'
+    line='dalpha', excite='cubic', recomb='cubic', ionise='linear', 
+    bounds_error=False, fill_value=None, 
     ):
     Te, ne, dataExcite, dataRecomb, dataIonise = loadADAS(line=line)
     scaleExcite = 10**int(np.log10(np.median(dataExcite)))
     fExcite = RegularGridInterpolator(
-        (Te, ne), dataExcite.T / scaleExcite, method=excite
+        (Te, ne), dataExcite.T / scaleExcite, method=excite, 
+        bounds_error=bounds_error, fill_value=fill_value 
         )
     scaleRecomb = 10**int(np.log10(np.median(dataRecomb)))
     fRecomb = RegularGridInterpolator(
-        (Te, ne), dataRecomb.T / scaleRecomb, method=recomb
+        (Te, ne), dataRecomb.T / scaleRecomb, method=recomb, 
+        bounds_error=bounds_error, fill_value=fill_value 
         )
     scaleIonise = 10**int(np.log10(np.median(dataIonise)))
     fIonise = RegularGridInterpolator(
-        (Te, ne), dataIonise.T / scaleIonise, method=ionise
+        (Te, ne), dataIonise.T / scaleIonise, method=ionise, 
+        bounds_error=bounds_error, fill_value=fill_value
         )
     return fExcite, scaleExcite, fRecomb, scaleRecomb, fIonise, scaleIonise
 

@@ -205,8 +205,10 @@ Rind = fn.findNearest(RgridB, Rprofile0)
 Rprofile = RgridB[Rind:]
 
 ### make ADAS data functions
+### TODO: Extrapolation arguments are hardcoded
 fExcite, scaleExcite, fRecomb, scaleRecomb, fIonise, scaleIonise = fn.makeADAS(
-    line=line, excite=kindExcite, recomb=kindRecomb, ionise=kindIonise
+    line=line, excite=kindExcite, recomb=kindRecomb, ionise=kindIonise, 
+    bounds_error=bounds_error, fill_value=fill_value
 )
 
 

@@ -28,35 +28,35 @@ def getSpec(shotn, wl='linear'):
 ### define the one gaussian
 def gaussian(x, A, x0, sigma):
     return A * np.exp(-(x - x0)**2 / (2. * sigma**2))
-def func1(x, A1, x01, s1, C):
-    y = gaussian(x, A1, x01, s1) + C
+def func1(x, A1, x01, s1):#, C):
+    y = gaussian(x, A1, x01, s1)# + C
     return y
-def func2(x, A1, x01, s1, A2, x02, s2, C):
-    y = gaussian(x, A1, x01, s1) + gaussian(x, A2, x02, s2) + C
+def func2(x, A1, x01, s1, A2, x02, s2):#, C):
+    y = gaussian(x, A1, x01, s1) + gaussian(x, A2, x02, s2)# + C
     return y
-def func3(x, A1, x01, s1, A2, x02, s2, A3, x03, s3, C):
+def func3(x, A1, x01, s1, A2, x02, s2, A3, x03, s3):#, C):
     y = gaussian(x, A1, x01, s1) + gaussian(x, A2, x02, s2) + \
-        gaussian(x, A3, x03, s3) + C
+        gaussian(x, A3, x03, s3)# + C
     return y
-def func4(x, A1, x01, s1, A2, x02, s2, A3, x03, s3, A4, x04, s4, C):
+def func4(x, A1, x01, s1, A2, x02, s2, A3, x03, s3, A4, x04, s4):#, C):
     y = gaussian(x, A1, x01, s1) + gaussian(x, A2, x02, s2) + \
-        gaussian(x, A3, x03, s3) + gaussian(x, A4, x04, s4) + C
+        gaussian(x, A3, x03, s3) + gaussian(x, A4, x04, s4)# + C
     return y
-def func5(x, A1, x01, s1, A2, x02, s2, A3, x03, s3, A4, x04, s4, A5, x05, s5, C):
-    y = gaussian(x, A1, x01, s1) + gaussian(x, A2, x02, s2) + \
-        gaussian(x, A3, x03, s3) + gaussian(x, A4, x04, s4) + \
-        gaussian(x, A5, x05, s5) + C
-    return y
-def func6(x, A1, x01, s1, A2, x02, s2, A3, x03, s3, A4, x04, s4, A5, x05, s5, A6, x06, s6, C):
+def func5(x, A1, x01, s1, A2, x02, s2, A3, x03, s3, A4, x04, s4, A5, x05, s5):#, C):
     y = gaussian(x, A1, x01, s1) + gaussian(x, A2, x02, s2) + \
         gaussian(x, A3, x03, s3) + gaussian(x, A4, x04, s4) + \
-        gaussian(x, A5, x05, s5) + gaussian(x, A6, x06, s6) + C
+        gaussian(x, A5, x05, s5)# + C
     return y
-def func7(x, A1, x01, s1, A2, x02, s2, A3, x03, s3, A4, x04, s4, A5, x05, s5, A6, x06, s6, A7, x07, s7, C):
+def func6(x, A1, x01, s1, A2, x02, s2, A3, x03, s3, A4, x04, s4, A5, x05, s5, A6, x06, s6):#, C):
+    y = gaussian(x, A1, x01, s1) + gaussian(x, A2, x02, s2) + \
+        gaussian(x, A3, x03, s3) + gaussian(x, A4, x04, s4) + \
+        gaussian(x, A5, x05, s5) + gaussian(x, A6, x06, s6)# + C
+    return y
+def func7(x, A1, x01, s1, A2, x02, s2, A3, x03, s3, A4, x04, s4, A5, x05, s5, A6, x06, s6, A7, x07, s7):#, C):
     y = gaussian(x, A1, x01, s1) + gaussian(x, A2, x02, s2) + \
         gaussian(x, A3, x03, s3) + gaussian(x, A4, x04, s4) + \
         gaussian(x, A5, x05, s5) + gaussian(x, A6, x06, s6) + \
-        gaussian(x, A7, x07, s7) + C
+        gaussian(x, A7, x07, s7)# + C
     return y
 
 
@@ -73,7 +73,8 @@ filter_andover = np.load('/home/sthoma/tokamak_inversion_routines/mastu/filterHS
 
 
 ### example shot number
-shotn = 50738
+# shotn = 50738
+shotn = 50747
 ### wl='linear' is the correct calibration
 spt, spd, wl = getSpec(shotn, wl='linear')
 
@@ -88,18 +89,21 @@ ch = 4 # which channel
 tind = 8 # which time
 x = wl[15:]
 y = spd[ch,tind,15:]
+y -= y[-200:].mean()
 
 ### fit to dalpha peaks
-I0 = findNearest(wl, 655.)
-J0 = findNearest(wl, 657.)
+I0 = findNearest(wl, 654.)
+J0 = findNearest(wl, 657.5)
 x0 = wl[I0:J0]
 y0 = spd[ch,tind,I0:J0]
-p0 = (6e5, 656.1012, 0.80, 1e5, 656.2819, 0.05, 600.)
-low0 = (0, 656., 0.01, 0., 656., 0.01, 500.)
-high0 = (7e5, 656.3, 8., 2e5, 656.4, .1, 1000.)
+p0 = (6e5, 656.1012, 0.80, 1e5, 656.2819, 0.05)#, 600.)
+low0 = (0, 656., 0.01, 0., 656., 0.01)#, 0.)
+high0 = (7e5, 656.3, 8., 2e5, 656.4, .1)#, 1000.)
 popt0, pcov0 = curve_fit(func2, x0, y0, p0=p0, bounds=(low0,high0))
 pcov0 = np.sqrt(np.diag(pcov0))
-print(popt0)
+print(popt0[0:3])
+print(popt0[3:6])
+# print(popt0[6])
 # print(pcov0)
 
 
@@ -111,12 +115,14 @@ y1 = spd[ch,tind,I1:J1]
 # low1 = (1000., 657.6, 0.05, 1000., 658.1, 0.05, 1000., 657.8, 0.05, 1000., 658.2, 0.05, 400.)
 # high1 = (3400., 658.0, 0.40, 2000., 658.5, 0.40, 2000., 658.2, 0.40, 2000., 658.6, 0.40, 800.)
 # popt1, pcov1 = curve_fit(func4, x1, y1, p0=p1, bounds=(low1,high1))
-p1 = (3000., 657.8, 0.20, 1600., 658.3, 0.20, 600.)
-low1 = (400., 657.6, 0.005, 400., 658.1, 0.005, 400.)
-high1 = (5000., 658.0, 0.40, 5000., 658.5, 0.40, 800.)
+p1 = (3000., 657.8, 0.20, 1600., 658.3, 0.20)#, 600.)
+low1 = (100., 657.6, 0.005, 100., 658.1, 0.005)#, 0.)
+high1 = (5000., 658.0, 0.40, 5000., 658.5, 0.40)#, 800.)
 popt1, pcov1 = curve_fit(func2, x1, y1, p0=p1, bounds=(low1,high1))
 pcov1 = np.sqrt(np.diag(pcov1))
-print(popt1)
+print(popt1[0:3])
+print(popt1[3:6])
+# print(popt1[6])
 # print(pcov1)
 
 
@@ -134,7 +140,7 @@ ymin2 = ymax2/ymax*ymin
 carbonlines = [657.80481,658.2876]
 
 ### plot it
-fig, ax = plt.subplots(1, 1, figsize=(4,3), dpi=150)
+fig, ax = plt.subplots(1, 1, figsize=(6,4), dpi=150)
 ax2 = ax.twinx()
 ax.vlines(carbonlines, ymin, ymax, colors='C4', linewidth=0.95, zorder=3)
 ax2.plot(filter['wavelength'], filter['transmission'], '-', c='C7', lw=filterlw, zorder=2, label='Current')
