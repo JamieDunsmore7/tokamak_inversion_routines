@@ -7,7 +7,7 @@ import numpy as np
 ### function for plotting inversion with reconstruction and raw-data
 def plotInversion(
     R, data, err, RgridB, y, yErr, backprojection, time, Rmax, yMax, R0, R1, 
-    fwhm, fwhmErr, savePath=None
+    fwhm, fwhmErr, savePath=None, close=False
     ):
     for i in range(data.shape[0]):
         fig, ax = plt.subplots(1, 1, figsize=(3.5,3), dpi=150)
@@ -43,6 +43,8 @@ def plotInversion(
         plt.tight_layout()
         if savePath:
             plt.savefig(savePath + f'{time[i]:.4f}s.png')
+        if close:
+            plt.close()
     return
 
 
@@ -52,7 +54,8 @@ def plotResults(
     SizErr, SizMax, SizMaxR, SizR0, SizR1, SizFWHM, SizFWHMerr, n0, n0Err,
     n0Max, n0MaxR, n0R1, n0R2, n0R3, n0w1, n0w1err, n0w2, n0w2err, n0w3, 
     n0w3err, n0R1A, n0R2A, n0R3A, time, figN0=None, neutralRatio=None, 
-    psiN=None, yMult=1.1, xlim=[1.25,1.50], n0lim=1e14, savePath=None
+    psiN=None, yMult=1.1, xlim=[1.25,1.50], n0lim=1e14, savePath=None, 
+    close=False
     ):
     Rind = findNearest(R, xlim[1])
     if psiN is None:
@@ -210,6 +213,8 @@ def plotResults(
         plt.tight_layout()
         if savePath:
             plt.savefig(savePath + f'{time[i]:.4f}s.png')
+        if close:
+            plt.close()
     return
 
 
@@ -228,9 +233,15 @@ if __name__ == "__main__":
     import sys
     resultsFile = sys.argv[1]
     try:
-        show = bool(sys.argv[2])
+        if sys.argv[2] == 'True':
+            show = True
+            close = False
+        else:
+            show = False
+            close = True
     except IndexError:
         show = False
+        close = True
     try:
         I = int(sys.argv[3])
     except IndexError:
@@ -318,6 +329,7 @@ if __name__ == "__main__":
         R, data[I:J], err[I:J], RgridB, emissivity[I:J], emissivityErr[I:J], 
         backprojection[I:J], time[I:J], emMaxR[I:J], emMax[I:J], emR0[I:J], 
         emR1[I:J], emFWHM[I:J], emFWHMerr[I:J], savePath=savePathInversion, 
+        close=close
     )
     plotResults(
         Rprofile, emissivity[I:J,Rind:], emissivityErr[I:J,Rind:], 
@@ -331,7 +343,7 @@ if __name__ == "__main__":
         neutralWidth3err[I:J], neutralR1A[I:J], neutralR2A[I:J], 
         neutralR3A[I:J], time[I:J], figN0=figN0[I:J], 
         neutralRatio=neutralRatio[I:J], psiN=psiN[I:J], 
-        savePath=savePathResults, 
+        savePath=savePathResults, close=close
     )
     if show:
         plt.show()

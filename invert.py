@@ -207,8 +207,8 @@ Rprofile = RgridB[Rind:]
 ### make ADAS data functions
 ### TODO: Extrapolation arguments are hardcoded
 fExcite, scaleExcite, fRecomb, scaleRecomb, fIonise, scaleIonise = fn.makeADAS(
-    line=line, excite=kindExcite, recomb=kindRecomb, ionise=kindIonise, 
-    bounds_error=bounds_error, fill_value=fill_value
+    line=line, excite=kindExcite, recomb=kindRecomb, 
+    ionise=kindIonise, bounds_error=False, fill_value=None
 )
 
 
@@ -261,7 +261,7 @@ neutralRatio = np.zeros(nT)
 
 ### iterate over the times
 for i in range(nT):
-    print(f'{i}/{nT}')
+    
     ### make profiles for this timestep
     T = fn.findNearest(timePed, time[i])
     profileTemp[i] = HSV.mtanh(

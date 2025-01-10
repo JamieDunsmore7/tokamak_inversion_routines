@@ -288,23 +288,30 @@ def mtanh(R, R0, height, width, grad, bkgd):
     return profile
 
 
-def getPedestal(shotn, kind, prefix='/apf/core/mtanh/lfs/'):
+def getPedestal(shotn, kind, prefix='/apf/core/mtanh/lfs/', trange=[-1.,-1.]):
     time = client.get(prefix+'time', shotn).data
     R0 = client.get(prefix+kind+'/pedestal_location', shotn).data
     height = client.get(prefix+kind+'/pedestal_height', shotn).data
     width = client.get(prefix+kind+'/pedestal_width', shotn).data
     grad = client.get(prefix+kind+'/pedestal_top_gradient', shotn).data
     bkgd = client.get(prefix+kind+'/background_level', shotn).data
-    return time, R0, height, width, grad, bkgd
+    if (trange[0] == -1.) and (trange[1] == -1.):
+        boo = np.ones_like(time).astype(bool)
+    else:
+        boo = (time >= trange[0]) * (time <= trange[1])
+    return time[boo], R0[boo], height[boo], width[boo], grad[boo], bkgd[boo]
 
 
-def getThomson(shotn, kind, prefix='/ayc/'):
+def getThomson(shotn, kind, prefix='/ayc/', trange=[-1.,-1.]):
     time = client.get(prefix+'time', shotn).data
     data = client.get(prefix+kind, shotn).data
     err = client.get(prefix+'d'+kind, shotn).data
     R = client.get(prefix+'R', shotn).data
-    return time, data, err, R
-
+    if (trange[0] == -1.) and (trange[1] == -1.):
+        boo = np.ones_like(time).astype(bool)
+    else:
+        boo = (time >= trange[0]) * (time <= trange[1])
+    return time[boo], data[boo], err[boo], R[boo]
 
 
 def getPsiN(shotn, t, R, z):
