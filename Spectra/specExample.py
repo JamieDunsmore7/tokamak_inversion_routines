@@ -74,7 +74,8 @@ filter_andover = np.load('/home/sthoma/tokamak_inversion_routines/mastu/filterHS
 
 ### example shot number
 # shotn = 50738
-shotn = 50747
+# shotn = 50747
+shotn = 51082
 ### wl='linear' is the correct calibration
 spt, spd, wl = getSpec(shotn, wl='linear')
 
@@ -86,7 +87,8 @@ spt, spd, wl = getSpec(shotn, wl='linear')
 
 ### select which to fit to
 ch = 4 # which channel
-tind = 8 # which time
+# tind = 8 # which time
+tind = 8
 x = wl[15:]
 y = spd[ch,tind,15:]
 y -= y[-200:].mean()
@@ -97,7 +99,7 @@ J0 = findNearest(wl, 657.5)
 x0 = wl[I0:J0]
 y0 = spd[ch,tind,I0:J0]
 p0 = (6e5, 656.1012, 0.80, 1e5, 656.2819, 0.05)#, 600.)
-low0 = (0, 656., 0.01, 0., 656., 0.01)#, 0.)
+low0 = (0, 656., 0.01, 0., 656.2, 0.005)#, 0.)
 high0 = (7e5, 656.3, 8., 2e5, 656.4, .1)#, 1000.)
 popt0, pcov0 = curve_fit(func2, x0, y0, p0=p0, bounds=(low0,high0))
 pcov0 = np.sqrt(np.diag(pcov0))
@@ -108,23 +110,36 @@ print(popt0[3:6])
 
 
 I1 = findNearest(wl, 657.4)
-J1 = findNearest(wl, 658.8)
+J1 = findNearest(wl, 660.5)
 x1 = wl[I1:J1]
 y1 = spd[ch,tind,I1:J1]
 # p1 = (3000., 657.8, 0.20, 1600., 658.3, 0.20, 1600., 658.0, 0.20, 1600., 658.4, 0.20, 600.)
 # low1 = (1000., 657.6, 0.05, 1000., 658.1, 0.05, 1000., 657.8, 0.05, 1000., 658.2, 0.05, 400.)
 # high1 = (3400., 658.0, 0.40, 2000., 658.5, 0.40, 2000., 658.2, 0.40, 2000., 658.6, 0.40, 800.)
 # popt1, pcov1 = curve_fit(func4, x1, y1, p0=p1, bounds=(low1,high1))
-p1 = (3000., 657.8, 0.20, 1600., 658.3, 0.20)#, 600.)
-low1 = (100., 657.6, 0.005, 100., 658.1, 0.005)#, 0.)
-high1 = (5000., 658.0, 0.40, 5000., 658.5, 0.40)#, 800.)
-popt1, pcov1 = curve_fit(func2, x1, y1, p0=p1, bounds=(low1,high1))
+# p1 = (3000., 657.8, 0.20, 1600., 658.3, 0.20)#, 600.)
+# low1 = (100., 657.6, 0.005, 100., 658.1, 0.005)#, 0.)
+# high1 = (5000., 658.0, 0.40, 5000., 658.5, 0.40)#, 800.)
+
+p1 = (
+    3000., 657.8, 0.20,     1600., 658.3, 0.20,     2000., 658.1, 0.20,     2000., 658.5, 0.20,     5000., 659.5, 0.20, 
+)
+low1 = (
+    100., 657.6, 0.005,     100., 658.1, 0.005,     300., 657.9, 0.005,     300., 658.3, 0.005,     1000., 659.3, 0.005, 
+)
+high1 = (
+    5000., 658.0, 0.40,     5000., 658.5, 0.40,     5000., 658.3, 0.40,     5000., 658.7, 0.40,     7000., 659.7, 0.40, 
+)
+
+popt1, pcov1 = curve_fit(func5, x1, y1, p0=p1, bounds=(low1,high1))
 pcov1 = np.sqrt(np.diag(pcov1))
 print(popt1[0:3])
 print(popt1[3:6])
 # print(popt1[6])
 # print(pcov1)
-
+print(popt1[6:9])
+print(popt1[9:12])
+print(popt1[12:15])
 
 # x1 = wl[J0:]
 # y1 = spd[ch,tind,J0:]
@@ -151,12 +166,13 @@ ax2.legend(fancybox=1, framealpha=1, loc='upper right', fontsize=8)
 
 ax.plot(x, y, '-k', zorder=3) # data
 ### plot the fits indivudually
-ax.plot(x, gaussian(x, popt0[0],popt0[1],popt0[2])+popt0[-1], '--', c='C0', zorder=4)
-ax.plot(x, gaussian(x, popt0[3],popt0[4],popt0[5])+popt0[-1], '--', c='C1', zorder=4)
-ax.plot(x, gaussian(x, popt1[0],popt1[1],popt1[2])+popt1[-1], '--', c='C2', zorder=4)
-ax.plot(x, gaussian(x, popt1[3],popt1[4],popt1[5])+popt1[-1], '--', c='C3', zorder=4)
-# ax.plot(x, gaussian(x, popt1[6],popt1[7],popt1[8])+popt1[-1], '--', c='C4', zorder=4)
-# ax.plot(x, gaussian(x, popt1[9],popt1[10],popt1[11])+popt1[-1], '--', c='C5', zorder=4)
+ax.plot(x, gaussian(x, popt0[0],popt0[1],popt0[2]), '--', c='C0', zorder=4)
+ax.plot(x, gaussian(x, popt0[3],popt0[4],popt0[5]), '--', c='C1', zorder=4)
+ax.plot(x, gaussian(x, popt1[0],popt1[1],popt1[2]), '--', c='C2', zorder=4)
+ax.plot(x, gaussian(x, popt1[3],popt1[4],popt1[5]), '--', c='C3', zorder=4)
+ax.plot(x, gaussian(x, popt1[6],popt1[7],popt1[8]), '--', c='C5', zorder=4)
+ax.plot(x, gaussian(x, popt1[9],popt1[10],popt1[11]), '--', c='C5', zorder=4)
+ax.plot(x, gaussian(x, popt1[12],popt1[13],popt1[14]), '--', c='C5', zorder=4)
 ### labels and title
 ax.set_xlabel('Wavelength (nm)', fontsize=9)
 ax.set_ylabel('Spec (arb)', fontsize=9)
