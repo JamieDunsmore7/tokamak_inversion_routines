@@ -2,7 +2,7 @@
 
 ### author: Steven Thomas
 ### email:  steven.thomas@ukaea.uk; sthoma@mit.edu
-__version__ = '1.6.0'
+__version__ = '1.7.0'
 
 
 import functions as fn
@@ -13,7 +13,7 @@ import sys
 
 # saveDir = '/common/BES_analysis/rbaResults/'
 saveDir = '/home/sthoma/Documents/Results/rba/'
-plot = False
+plot = True
 
 
 ###############################################################################
@@ -55,6 +55,8 @@ nFisher = inputDict['nFisher']
 regGuess = inputDict['regGuess']
 regMin = inputDict['regMin']
 
+### use pedestal fitting or raw Thomson
+kindThomson = inputDict['kindThomson']
 ### R value pedestal fitting works up to
 Rprofile0 = inputDict['Rprofile0']
 
@@ -194,11 +196,17 @@ for i in range(nT):
 ###############################################################################
 
 
-### load the pedestal fitting parameters
-timePed, R0Density, heightDensity, widthDensity, \
-    gradDensity, bkgdDensity = HSV.getPedestal(shotn, 'n_e')
-_, R0Temp, heightTemp, widthTemp, \
-    gradTemp, bkgdTemp = HSV.getPedestal(shotn, 'T_e')
+### using raw Thomson or Pedestal fitting
+if kindThomson == 'fit':
+    ### load the pedestal fitting parameters
+    timeProfile, R0Density, heightDensity, widthDensity, \
+        gradDensity, bkgdDensity = HSV.getPedestal(shotn, 'n_e')
+    _, R0Temp, heightTemp, widthTemp, \
+        gradTemp, bkgdTemp = HSV.getPedestal(shotn, 'T_e')
+
+### always load the Thomson data
+timeProfile, dataDensity, _, Rthomson = HSV.getThomson(shotn, 'n_e')
+_, dataTemp, _, _ = HSV.getThomson(shotn, 'T_e')
 
 ### make R array for profiles
 Rind = fn.findNearest(RgridB, Rprofile0)
@@ -220,6 +228,8 @@ fExcite, scaleExcite, fRecomb, scaleRecomb, fIonise, scaleIonise = fn.makeADAS(
 ### make empty arrays for Thomson profiles
 profileTemp = np.zeros((nT, len(Rprofile)))
 profileDensity = np.zeros((nT, len(Rprofile)))
+### where the end of the Thomson data is
+RendThomson = np.zeros(nT)
 ### make empty arrays for Siz, n0, and errors
 ioniseRate = np.zeros((nT, len(Rprofile)))
 ioniseErr = np.zeros((nT, len(Rprofile)))
@@ -263,15 +273,52 @@ neutralRatio = np.zeros(nT)
 for i in range(nT):
     
     ### make profiles for this timestep
-    T = fn.findNearest(timePed, time[i])
-    profileTemp[i] = HSV.mtanh(
-        Rprofile, R0Temp[T], heightTemp[T],
-        widthTemp[T], gradTemp[T], bkgdTemp[T]
-    )
-    profileDensity[i] = HSV.mtanh(
-        Rprofile, R0Density[T], heightDensity[T],
-        widthDensity[T], gradDensity[T], bkgdDensity[T]
-    )
+    T = fn.findNearest(timeProfile, time[i])
+    
+    ### find where the last Thomson data point is
+    ### don't use HFS, LFS only
+    rTh = fn.findNearest(Rthomson[T], 1.) # TODO, hardcoded 1.
+    xTh = Rthomson[T,rTh:]
+    ### get rid of Infs and NaNs
+    booThomson = np.isfinite(dataTemp[T,rTh:]) * \
+                np.isfinite(dataDensity[T,rTh:])
+    ### where the last datapoint is
+    RendThomson[i] = xTh[booThomson][-1]
+    
+
+    if kindThomson == 'fit':
+
+        ### using pedestal fitting results
+        profileTemp[i] = HSV.mtanh(
+            Rprofile, R0Temp[T], heightTemp[T],
+            widthTemp[T], gradTemp[T], bkgdTemp[T]
+        )
+        profileDensity[i] = HSV.mtanh(
+            Rprofile, R0Density[T], heightDensity[T],
+            widthDensity[T], gradDensity[T], bkgdDensity[T]
+        )
+
+    elif kindThomson == 'raw':
+        ### using the raw Thomson data
+
+        ### temperature
+        yTh = dataTemp[T,rTh:][booThomson]
+        left = None
+        right = None
+        # right = 0.200001
+        profileTemp[i] = np.interp(
+            Rprofile, xTh[booThomson], yTh, left=left, right=right
+            )
+
+        ### density
+        yTh = dataDensity[T,rTh:][booThomson]
+        left = None
+        right = None
+        # right = 5.000001e13
+        profileDensity[i] = np.interp(
+            Rprofile, xTh[booThomson], yTh, left=left, right=right
+            )
+        ### TODO: hardcoded extrapolation method
 
     ### throw it into the iteration function
     ioniseRate[i], ioniseErr[i], neutralDensity[i], neutralErr[i] = \
@@ -383,6 +430,7 @@ if saveFile:
         Rprofile = Rprofile,
         profileTemp = profileTemp,
         profileDensity = profileDensity,
+        RendThomson = RendThomson,
         ioniseRate = ioniseRate,
         ioniseErr = ioniseErr,
         neutralDensity = neutralDensity,
@@ -447,8 +495,8 @@ if plot:
         neutralDensity, neutralErr, neutralMax, neutralMaxR, neutralR1,
         neutralR2, neutralR3, neutralWidth1, neutralWidth1err, neutralWidth2,
         neutralWidth2err, neutralWidth3, neutralWidth3err, neutralR1A,
-        neutralR2A, neutralR3A, time, figN0=figN0, neutralRatio=neutralRatio,
-        psiN=psiN,
+        neutralR2A, neutralR3A, RendThomson, time, figN0=figN0, 
+        neutralRatio=neutralRatio, psiN=psiN,
     )
     from matplotlib.pyplot import show
     show()

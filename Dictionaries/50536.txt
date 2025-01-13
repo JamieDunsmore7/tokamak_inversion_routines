@@ -47,6 +47,7 @@
     "regGuess": 0.7,
     "regMin": 0.4,
 
+    "kindThomson": "raw",
     "Rprofile0": 1.25,
 
     "line": "dalpha",

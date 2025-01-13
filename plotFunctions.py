@@ -53,7 +53,7 @@ def plotResults(
     R, emiss, emissErr, emMaxR, emMax, emR0, emR1, emFWHM, emFWHMerr, Siz,
     SizErr, SizMax, SizMaxR, SizR0, SizR1, SizFWHM, SizFWHMerr, n0, n0Err,
     n0Max, n0MaxR, n0R1, n0R2, n0R3, n0w1, n0w1err, n0w2, n0w2err, n0w3, 
-    n0w3err, n0R1A, n0R2A, n0R3A, time, figN0=None, neutralRatio=None, 
+    n0w3err, n0R1A, n0R2A, n0R3A, Rend, time, figN0=None, neutralRatio=None, 
     psiN=None, yMult=1.1, xlim=[1.25,1.50], n0lim=1e14, savePath=None, 
     close=False
     ):
@@ -63,6 +63,7 @@ def plotResults(
     else:
         top = False
     for i in range(len(time)):
+        Rind1 = findNearest(R, Rend[i])
         fig, ax = plt.subplots(1, 3, figsize=(6,3), dpi=150)
         
         ax[0].plot(R, emiss[i], '-', c='C0')
@@ -112,7 +113,12 @@ def plotResults(
         ax[1].set_xlabel('$R$ (m)')
         ax[1].set_ylabel('$S_\\mathrm{iz}$ (m$^{-3}$ s$^{-1}$)')
         ax[1].yaxis.get_offset_text().set_size(9)
-        ax[1].set_ylim([0., (Siz[i]+SizErr[i]).max() * yMult])
+        ylim = [0., (Siz[i,:Rind1+1]+SizErr[i,:Rind1+1]).max() * yMult]
+        ax[1].fill_between(
+            [Rend[i],xlim[1]], [ylim[0],ylim[0]], 
+            [ylim[1],ylim[1]], color='k', alpha=0.1
+            )
+        ax[1].set_ylim(ylim)
         ax[1].yaxis.set_minor_locator(AutoMinorLocator())
         
         ax[2].plot(R, n0[i], '-', c='C2', mfc='None')
@@ -121,7 +127,7 @@ def plotResults(
         )
         ylim = [
             np.max((n0[i,:Rind].min() / yMult, n0lim)), 
-            (n0[i] + n0Err[i]).max() * yMult
+            (n0[i,:Rind1+1] + n0Err[i,Rind1+1]).max() * yMult
         ]
         ax[2].plot(xlim, [n0Max[i],n0Max[i]], '-', c='C0', lw=0.8)
         ax[2].plot(
@@ -132,6 +138,7 @@ def plotResults(
             f'{n0MaxR[i]:.3f}m\n{n0Max[i]:.2g}m$^{{-3}}$', 
             c='C0', fontsize=8, ha='right', va='top'
         )
+
         yVal = n0Max[i] * np.exp(-1.)
         ax[2].plot([xlim[0],n0R1[i]], [yVal,yVal], '-', c='C1', lw=0.8)
         ax[2].plot([n0R1[i],n0R1[i]], [ylim[0],yVal], '-', c='C1', lw=0.8)
@@ -167,7 +174,12 @@ def plotResults(
         ax[2].set_ylabel('$n_0$ (m$^{-3}$)')
         ax[2].yaxis.get_offset_text().set_size(9)
         ax[2].set_ylim(ylim)
+        ax[2].fill_between(
+            [Rend[i],xlim[1]], [ylim[0],ylim[0]], 
+            [ylim[1],ylim[1]], color='k', alpha=0.1
+            )
         ax[2].set_yscale('log')
+
         if neutralRatio is not None:
             ax[2].text(
                 n0MaxR[i], n0Max[i], 
@@ -289,6 +301,7 @@ if __name__ == "__main__":
     Rprofile = results['Rprofile']
     # profileTemp = results['profileTemp']
     # profileDensity = results['profileDensity']
+    RendThomson = results['RendThomson']
     ioniseRate = results['ioniseRate']
     ioniseErr = results['ioniseErr']
     neutralDensity = results['neutralDensity']
@@ -331,6 +344,7 @@ if __name__ == "__main__":
         emR1[I:J], emFWHM[I:J], emFWHMerr[I:J], savePath=savePathInversion, 
         close=close
     )
+
     plotResults(
         Rprofile, emissivity[I:J,Rind:], emissivityErr[I:J,Rind:], 
         emMaxR[I:J], emMax[I:J], emR0[I:J], emR1[I:J], emFWHM[I:J], 
@@ -341,7 +355,7 @@ if __name__ == "__main__":
         neutralR3[I:J], neutralWidth1[I:J], neutralWidth1err[I:J], 
         neutralWidth2[I:J], neutralWidth2err[I:J], neutralWidth3[I:J], 
         neutralWidth3err[I:J], neutralR1A[I:J], neutralR2A[I:J], 
-        neutralR3A[I:J], time[I:J], figN0=figN0[I:J], 
+        neutralR3A[I:J], RendThomson[I:J], time[I:J], figN0=figN0[I:J], 
         neutralRatio=neutralRatio[I:J], psiN=psiN[I:J], 
         savePath=savePathResults, close=close
     )
