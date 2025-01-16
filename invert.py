@@ -2,7 +2,7 @@
 
 ### author: Steven Thomas
 ### email:  steven.thomas@ukaea.uk; sthoma@mit.edu
-__version__ = '1.7.0'
+__version__ = '1.7.1'
 
 
 import functions as fn
@@ -163,6 +163,11 @@ indSpace = slice(0, nGrid-1)
 ### linspace, used in each iteration
 Q = np.linspace(0., 1., indLos.stop-indLos.start)
 
+### make R array for profiles.
+### Rprofile needed later, Rind needed now
+Rind = fn.findNearest(RgridB, Rprofile0)
+Rprofile = RgridB[Rind:]
+
 ### iterate over the times
 for i in range(nT):
 
@@ -177,16 +182,16 @@ for i in range(nT):
     emissivityErr[i] *= scale
 
     ### find the emissivity maximum and location
-    emMax[i] = emissivity[i].max()
-    emMaxR[i] = RgridB[emissivity[i].argmax()]
+    emMax[i] = emissivity[i][Rind:].max()
+    emMaxR[i] = Rprofile[emissivity[i][Rind:].argmax()]
 
     ### calculate the emissivity FWHM
     emR0[i], emR1[i] = fn.findPosition(
-        RgridB, emissivity[i], 0.5, kind='linear'
+        Rprofile, emissivity[i][Rind:], 0.5, kind='linear'
     )
     emFWHM[i] = emR1[i] - emR0[i]
     emFWHMerr[i] = fn.findPositionErr(
-        RgridB, emissivity[i], emissivityErr[i],
+        Rprofile, emissivity[i][Rind:], emissivityErr[i][Rind:],
         0.5, x0=emR0[i], x1=emR1[i], kind='linear'
     )
 
@@ -207,10 +212,6 @@ if kindThomson == 'fit':
 ### always load the Thomson data
 timeProfile, dataDensity, _, Rthomson = HSV.getThomson(shotn, 'n_e')
 _, dataTemp, _, _ = HSV.getThomson(shotn, 'T_e')
-
-### make R array for profiles
-Rind = fn.findNearest(RgridB, Rprofile0)
-Rprofile = RgridB[Rind:]
 
 ### make ADAS data functions
 ### TODO: Extrapolation arguments are hardcoded

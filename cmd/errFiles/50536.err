@@ -1,0 +1,9 @@
+Traceback (most recent call last):
+  File "/home/sthoma/tokamak_inversion_routines/./invert.py", line 208, in <module>
+    timeProfile, dataDensity, _, Rthomson = HSV.getThomson(shotn, 'n_e')
+  File "/home/sthoma/tokamak_inversion_routines/mastu/HSV.py", line 306, in getThomson
+    time = client.get(prefix+'time', shotn).data
+  File "/usr/local/depot/uda-2.6.1/python/pyuda/_client.py", line 170, in get
+    result = cpyuda.get_data(str(signal), str(source))
+  File "pyuda/cpyuda/cpyuda.pyx", line 106, in cpyuda.get_data
+cpyuda.ServerException: Unable to Locate a Hierarchical Group

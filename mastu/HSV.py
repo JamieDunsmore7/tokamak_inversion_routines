@@ -46,7 +46,7 @@ def getSingle(shotn, tind):
     
     # frame[windowI,windowJ] = data.frames[0].k.T
     frame = data.frames[0].k.T
-    time = data.frame_times[0]
+    time = data.frame_times[tind]
     
     return frame[:,::-1], time
 
@@ -150,12 +150,17 @@ def vignette(
     return vignFn.reshape(xx.shape)
 
 
-def getWindow(shotn):
+def getWindow(shotn, minus=True):
+    ### the indexing of top, etc., starts at 1 not 0 like in python
+    if minus:
+        number = -1
+    else:
+        number = 0
     rba = client.get_images('rba', shotn, frame_number=0)
-    I0 = rba.top
-    I1 = rba.bottom
-    J0 = rba.left
-    J1 = rba.right
+    I0 = rba.top - number
+    I1 = rba.bottom - number
+    J0 = rba.left - number
+    J1 = rba.right - number
     return I0, I1, J0, J1
 
 
