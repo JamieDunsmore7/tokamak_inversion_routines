@@ -293,6 +293,14 @@ def mtanh(R, R0, height, width, grad, bkgd):
     return profile
 
 
+def mtanhGradient(R, R0, height, width, grad, bkgd):
+    sigma = 0.25 * width
+    z = -4. * (R - R0) / width
+    L = 1. / (1. + np.exp(-z))
+    c = 4. * (height - bkgd) / width
+    return -1. * L * ((1. - L) * (c + grad * z) + grad)
+
+
 def getPedestal(shotn, kind, prefix='/apf/core/mtanh/lfs/', trange=[-1.,-1.]):
     time = client.get(prefix+'time', shotn).data
     R0 = client.get(prefix+kind+'/pedestal_location', shotn).data
@@ -359,7 +367,55 @@ def getPsiN(shotn, t, R, z):
     return psiN, t
 
 
+def getMinorRadius(shotn, time, Rwant, zwant, Rmin=0.1, Rmax=1.5, dR=5e-4, device='MASTU', mastu_prefix='epm'):
+    ### mastu_prefix = 'epm' or 'epq'
+    from pyEquilibrium.equilibrium import equilibrium as equil
+    from scipy.interpolate import interp1d
+    
+    ### make the Rwant a list if only a single value is provided
+    if not isinstance(Rwant, (list, np.ndarray)):
+        Rwant = [Rwant]
+    if not isinstance(zwant, (list, np.ndarray)):
+        zwant = [zwant]
 
+    N = min(len(Rwant), len(zwant))
+    ### make the equilibrium object
+    eq = equil(device='MASTU', shot=shotn, time=time, mastu_prefix=mastu_prefix)
+    ### find the magnetic axis
+    Raxis, Zaxis = eq.axis
+    ### make the Rarray and find psiN for it
+    R = np.arange(Rmin, Rmax + (dR*0.5), dR)
+    psiN = eq.psiN(R, Zaxis)[0]
+    ### the index closest to the magnetic axis
+    ind = psiN.argmin()
+    ### the index where psiN turns in the centre column
+    ind0 = psiN[:ind].argmax()
+    ### chop the arrays down from this point
+    R = R[ind0:]
+    psiN = psiN[ind0:]
+    ind -= ind0
+    ### make the inteprolation function
+    hfsFunc = interp1d(psiN[:ind+1], R[:ind+1])
+    lfsFunc = interp1d(psiN[ind:], R[ind:])
+
+    ### empty array for the results
+    minorRadius = np.zeros(N)
+    for i in range(0, N):
+        ### find psiN of the position I want
+        psiWant = eq.psiN(Rwant[i], zwant[i])[0][0]
+        try:
+            ### inteprolate to find majorRadius
+            hfsR = hfsFunc(psiWant)
+            lfsR = lfsFunc(psiWant)
+            ### now find the difference
+            minorRadius[i] = (lfsR - hfsR) * 0.5
+        ### assumes it failed because it couldn't find the inner psiN
+        except ValueError:
+            ###
+            minorRadius[i:] = Rwant[i:] - Rwant[i-1] + minorRadius[i-1]
+            break
+            
+    return minorRadius
 
 
 

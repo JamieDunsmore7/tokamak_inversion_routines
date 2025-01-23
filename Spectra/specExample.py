@@ -70,6 +70,7 @@ filter = np.load('/home/sthoma/tokamak_inversion_routines/mastu/filterHSV.npz')
 filter_15A = np.load('/home/sthoma/tokamak_inversion_routines/mastu/filterHSV_1.5A.npz')
 filter_15B = np.load('/home/sthoma/tokamak_inversion_routines/mastu/filterHSV_1.5B.npz')
 filter_andover = np.load('/home/sthoma/tokamak_inversion_routines/mastu/filterHSV_andover.npz')
+filter_andover_CCFE = np.load('/home/sthoma/tokamak_inversion_routines/mastu/filterHSV_andoverCCFE_adjusted.npz')
 
 
 ### example shot number
@@ -162,6 +163,7 @@ ax2.plot(filter['wavelength'], filter['transmission'], '-', c='C7', lw=filterlw,
 ax2.plot(filter_15A['wavelength'], filter_15A['transmission'], '-', c='C6', lw=filterlw, zorder=2, label='1.5A')
 ax2.plot(filter_15B['wavelength'], filter_15B['transmission'], '--', c='C8', lw=filterlw, zorder=2, label='1.5B')
 ax2.plot(filter_andover['wavelength'], filter_andover['transmission'], '-', c='C9', lw=filterlw, zorder=2, label='andover')
+ax2.plot(filter_andover_CCFE['wavelength'], filter_andover_CCFE['transmission'], '--', c='gray', lw=filterlw, zorder=2, label='andoverCCFE')
 ax2.legend(fancybox=1, framealpha=1, loc='upper right', fontsize=8)
 
 ax.plot(x, y, '-k', zorder=3) # data

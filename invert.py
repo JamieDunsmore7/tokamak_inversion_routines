@@ -2,7 +2,7 @@
 
 ### author: Steven Thomas
 ### email:  steven.thomas@ukaea.uk; sthoma@mit.edu
-__version__ = '1.7.1'
+__version__ = '1.7.2'
 
 
 import functions as fn
@@ -210,7 +210,7 @@ if kindThomson == 'fit':
         gradTemp, bkgdTemp = HSV.getPedestal(shotn, 'T_e')
 
 ### always load the Thomson data
-timeProfile, dataDensity, _, Rthomson = HSV.getThomson(shotn, 'n_e')
+timeThomson, dataDensity, _, Rthomson = HSV.getThomson(shotn, 'n_e')
 _, dataTemp, _, _ = HSV.getThomson(shotn, 'T_e')
 
 ### make ADAS data functions
@@ -274,7 +274,7 @@ neutralRatio = np.zeros(nT)
 for i in range(nT):
     
     ### make profiles for this timestep
-    T = fn.findNearest(timeProfile, time[i])
+    T = fn.findNearest(timeThomson, time[i])
     
     ### find where the last Thomson data point is
     ### don't use HFS, LFS only
@@ -289,14 +289,15 @@ for i in range(nT):
 
     if kindThomson == 'fit':
 
+        TT = fn.findNearest(timeProfile, time[i])
         ### using pedestal fitting results
         profileTemp[i] = HSV.mtanh(
-            Rprofile, R0Temp[T], heightTemp[T],
-            widthTemp[T], gradTemp[T], bkgdTemp[T]
+            Rprofile, R0Temp[TT], heightTemp[TT],
+            widthTemp[TT], gradTemp[TT], bkgdTemp[TT]
         )
         profileDensity[i] = HSV.mtanh(
-            Rprofile, R0Density[T], heightDensity[T],
-            widthDensity[T], gradDensity[T], bkgdDensity[T]
+            Rprofile, R0Density[TT], heightDensity[TT],
+            widthDensity[TT], gradDensity[TT], bkgdDensity[TT]
         )
 
     elif kindThomson == 'raw':

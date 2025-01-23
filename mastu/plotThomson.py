@@ -46,7 +46,14 @@ _, peR0, peHeight, peWidth, peGrad, peBkgd = HSV.getPedestal(
 ### R for the pedestal profiles
 R = np.linspace(xlim[0], xlim[1], 100)
 ### raw thomson data
-_, ne, neErr, Rraw = HSV.getThomson(shotn, 'n_e', trange=trange)
+time2, ne, neErr, Rraw = HSV.getThomson(shotn, 'n_e', trange=trange)
+### check if the time range is fine between the two
+if (len(time) != len(time2)) or (
+    not (np.isclose(time == time2).all() and np.isclose(time2 == time).all())
+    ):
+    ### change trange if need be, and reload density
+    trange = [time[0],time[-1]]
+    _,  ne, neErr, Rraw = HSV.getThomson(shotn, 'n_e', trange=trange)
 _, Te, TeErr, _ = HSV.getThomson(shotn, 'T_e', trange=trange)
 _, pe, peErr, _ = HSV.getThomson(shotn, 'p_e', trange=trange)
 
