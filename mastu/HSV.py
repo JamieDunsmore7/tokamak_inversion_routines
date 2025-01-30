@@ -367,7 +367,10 @@ def getPsiN(shotn, t, R, z):
     return psiN, t
 
 
-def getMinorRadius(shotn, time, Rwant, zwant, Rmin=0.1, Rmax=1.5, dR=5e-4, device='MASTU', mastu_prefix='epm'):
+def getMinorRadius(
+    shotn, time, Rwant, zwant, Rmin=0.1, Rmax=1.5, dR=5e-4,
+    device='MASTU', mastu_prefix='epm', efitpp_file=None
+    ):
     ### mastu_prefix = 'epm' or 'epq'
     from pyEquilibrium.equilibrium import equilibrium as equil
     from scipy.interpolate import interp1d
@@ -380,7 +383,13 @@ def getMinorRadius(shotn, time, Rwant, zwant, Rmin=0.1, Rmax=1.5, dR=5e-4, devic
 
     N = min(len(Rwant), len(zwant))
     ### make the equilibrium object
-    eq = equil(device='MASTU', shot=shotn, time=time, mastu_prefix=mastu_prefix)
+    if efitpp_file:
+        eq = equil(device='MASTU', time=time, efitpp_file=efitpp_file)
+    else:
+        eq = equil(
+            device='MASTU', shot=shotn, time=time, 
+            mastu_prefix=mastu_prefix, efitpp_file=efitpp_file
+        )
     ### find the magnetic axis
     Raxis, Zaxis = eq.axis
     ### make the Rarray and find psiN for it

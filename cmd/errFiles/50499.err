@@ -1,0 +1,4 @@
+/home/sthoma/tokamak_inversion_routines/plotFunctions.py:13: RuntimeWarning: More than 20 figures have been opened. Figures created through the pyplot interface (`matplotlib.pyplot.figure`) are retained until explicitly closed and may consume too much memory. (To control this warning, see the rcParam `figure.max_open_warning`). Consider using `matplotlib.pyplot.close()`.
+  fig, ax = plt.subplots(1, 1, figsize=(3.5,3), dpi=150)
+/home/sthoma/tokamak_inversion_routines/plotFunctions.py:225: UserWarning: Tight layout not applied. The bottom and top margins cannot be made large enough to accommodate all axes decorations.
+  plt.tight_layout()

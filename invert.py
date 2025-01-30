@@ -13,7 +13,7 @@ import sys
 
 # saveDir = '/common/BES_analysis/rbaResults/'
 saveDir = '/home/sthoma/Documents/Results/rba/'
-plot = True
+plot = False
 
 
 ###############################################################################
@@ -287,6 +287,7 @@ for i in range(nT):
     RendThomson[i] = xTh[booThomson][-1]
     
 
+    ### handle the pedestalFit or raw data differently
     if kindThomson == 'fit':
 
         TT = fn.findNearest(timeProfile, time[i])
