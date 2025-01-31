@@ -13,27 +13,25 @@ def get(shotn, trange=[-1.,-1.], tind=None):
     if tind is not None:
         return getSingle(shotn, tind)
     
-    data = client.get_images('rba', shotn)
-    # windowJ = slice(data.top, data.bottom + 1)
-    # windowI = slice(data.left, data.right + 1)
-    I = data.right + 1 - data.left
-    J = data.bottom + 1 - data.top
-    dtype = data.frames[0].k.dtype
-    time = data.frame_times
+    _data = client.get_images('rba', shotn, frame_number=0)
+    I = _data.right + 1 - _data.left
+    J = _data.bottom + 1 - _data.top
+    dtype = _data.frames[0].k.dtype
+    time = _data.frame_times
     
     if (trange[0] == -1.) and (trange[1] == -1.):
-        t0 = 0
-        T = len(data.frames)
+        T = len(time)
+        data = client.get_images('rba', shotn)
     else:
         t0 = findNearest(time, trange[0])
         t1 = findNearest(time, trange[1])
         T = t1 - t0
         time = time[t0:t1]
+        data = client.get_images('rba', shotn, first_frame=t0, last_frame=t1)
         
     frames = np.zeros((I,J,T)).astype(dtype)
     for i in range(0, T):
-        # frames[windowI,windowJ,i] = data.frames[i+t0].k.T
-        frames[...,i] = data.frames[i+t0].k.T
+        frames[...,i] = data.frames[i].k.T
         
     return frames[:,::-1,:], time
 
