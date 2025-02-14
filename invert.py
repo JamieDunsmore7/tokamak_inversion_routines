@@ -207,8 +207,8 @@ inputDict['invert_version'] = invert_version
 if saveFile:
 
     ### create directory and change filename if needed
-    npzName = fn.makeFName(saveDir, shotn, saveFile)
-    npzName = npzName.replace('.npz', '_invert.npz')
+    npzName = saveFile.replace('.npz', '_invert.npz')
+    npzName = fn.makeFName(saveDir, shotn, npzName)
     np.savez(npzName,
         R = R,
         data = data,

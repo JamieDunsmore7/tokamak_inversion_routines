@@ -13,7 +13,7 @@ import sys
 
 # saveDir = '/common/BES_analysis/rbaResults/'
 saveDir = '/home/sthoma/Documents/Results/rba/'
-plot = False
+plot = True
 
 
 ###############################################################################
@@ -24,6 +24,7 @@ plot = False
 ### load the dictionary
 dictFile = sys.argv[1]
 inputDict = fn.loadDict(dictFile)
+loadFile = dictFile.replace('.txt', '.npz')
 
 ### unzip the dictionary
 shotn = inputDict['shotn']
@@ -73,9 +74,10 @@ percent = inputDict['percent']
 figTemp = inputDict['figTemp']
 
 ### load the results from inversion
-inversion = np.load(dictFile.replace('.txt', '.npz'))
+inversion = np.load(loadFile)
 R = inversion['R']
 data = inversion['data']
+nT, nR = data.shape
 err = inversion['err']
 time = inversion['time']
 Rgrid = inversion['Rgrid']
@@ -309,8 +311,9 @@ inputDict['neutral_version'] = neutral_version
 if saveFile:
 
     ### create directory and change filename if needed
-    npzName = fn.makeFName(saveDir, shotn, saveFile)
-    npzName = npzName.replace('.npz', '_neutral.npz')
+    npzName = loadFile.split('/')[-1].replace('invert', 'neutral')
+    npzName = fn.makeFName(saveDir, shotn, npzName)
+    
     np.savez(npzName,
         R = R,
         data = data,

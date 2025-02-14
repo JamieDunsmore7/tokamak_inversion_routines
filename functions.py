@@ -261,10 +261,42 @@ def makeGrid(R, nGrid):
     return Rgrid, RgridB
 
 
-def makeFName(saveDir, shotn, saveFile):
+# def makeFName(saveDir, shotn, saveFile):
+#     ### creates directory if needed
+#     ### iterates filename to stop overwriting
+#     import os
+    
+#     saveStr = f'{saveDir}{shotn}/'
+#     if not os.path.exists(saveStr):
+#         os.makedirs(saveStr)
+    
+#     fname = f'{saveStr}{saveFile}'
+#     if os.path.isfile(fname):
+#         count = 1
+#         fname = fname.replace('.', f'_{count}.')
+#         while os.path.isfile(fname):
+#             check = f'_{count}.'
+#             count += 1
+#             replace = f'_{count}.'
+#             fname = fname.replace(check, replace)
+    
+#     return fname
+
+
+def makeFName(saveDir, shotn, saveFile, kind='int'):
     ### creates directory if needed
     ### iterates filename to stop overwriting
     import os
+    
+    if kind == 'int':
+        funcA = int
+        funcB = int
+        count = funcA(1)
+    
+    elif kind == 'str':
+        funcA = chr
+        funcB = ord
+        count = funcA(65)
     
     saveStr = f'{saveDir}{shotn}/'
     if not os.path.exists(saveStr):
@@ -272,16 +304,13 @@ def makeFName(saveDir, shotn, saveFile):
     
     fname = f'{saveStr}{saveFile}'
     if os.path.isfile(fname):
-        count = 1
         fname = fname.replace('.', f'_{count}.')
+        
         while os.path.isfile(fname):
             check = f'_{count}.'
-            count += 1
+            count = funcA(funcB(count) + 1)
             replace = f'_{count}.'
             fname = fname.replace(check, replace)
-    # while os.path.isfile(fname):
-    #     # fname = fname.replace('.', '(1).')
-    #     fname = fname.replace('.', '_1.')
     
     return fname
 

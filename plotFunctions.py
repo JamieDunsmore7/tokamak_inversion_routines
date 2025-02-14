@@ -281,84 +281,100 @@ if __name__ == "__main__":
 
     ### load the results
     results = np.load(resultsFile)
-    R = results['R']
-    data = results['data']
-    err = results['err']
-    time = results['time']
-    # Rgrid = results['Rgrid']
-    RgridB = results['RgridB']
-    emissivity = results['emissivity']
-    emissivityErr = results['emissivityErr']
-    backprojection = results['backprojection']
-    # scale = results['scale']
-    emMax = results['emMax']
-    emMaxR = results['emMaxR']
-    emR0 = results['emR0']
-    emR1 = results['emR1']
-    emFWHM = results['emFWHM']
-    emFWHMerr = results['emFWHMerr']
-    Rind = results['Rind']
-    Rprofile = results['Rprofile']
-    # profileTemp = results['profileTemp']
-    # profileDensity = results['profileDensity']
-    RendThomson = results['RendThomson']
-    ioniseRate = results['ioniseRate']
-    ioniseErr = results['ioniseErr']
-    neutralDensity = results['neutralDensity']
-    neutralErr = results['neutralErr']
-    ioniseMax = results['ioniseMax']
-    ioniseMaxR = results['ioniseMaxR']
-    ioniseR0 = results['ioniseR0']
-    ioniseR1 = results['ioniseR1']
-    ioniseFWHM = results['ioniseFWHM']
-    ioniseFWHMerr = results['ioniseFWHMerr']
-    neutralMax = results['neutralMax']
-    neutralMaxR = results['neutralMaxR']
-    neutralR1 = results['neutralR1']
-    neutralR2 = results['neutralR2']
-    neutralR3 = results['neutralR3']
-    neutralWidth1 = results['neutralWidth1']
-    neutralWidth1err = results['neutralWidth1err']
-    neutralWidth2 = results['neutralWidth2']
-    neutralWidth2err = results['neutralWidth2err']
-    neutralWidth3 = results['neutralWidth3']
-    neutralWidth3err = results['neutralWidth3err']
-    neutralR1A = results['neutralR1A']
-    neutralR2A = results['neutralR2A']
-    neutralR3A = results['neutralR3A']
-    # neutralWidth1A = results['neutralWidth1A']
-    # neutralWidth1Aerr = results['neutralWidth1Aerr']
-    # neutralWidth2A = results['neutralWidth2A']
-    # neutralWidth2Aerr = results['neutralWidth2Aerr']
-    # neutralWidth3A = results['neutralWidth3A']
-    # neutralWidth3Aerr = results['neutralWidth3Aerr']
-    figN0 = results['figN0']
-    psiN = results['psiN']
-    neutralRatio = results['neutralRatio']
+    try:
+        invert_version = results['invert_version']
+        
+        ### load the results
+        R = results['R']
+        data = results['data']
+        err = results['err']
+        time = results['time']
+        RgridB = results['RgridB']
+        emissivity = results['emissivity']
+        emissivityErr = results['emissivityErr']
+        backprojection = results['backprojection']
+        emMax = results['emMax']
+        emMaxR = results['emMaxR']
+        emR0 = results['emR0']
+        emR1 = results['emR1']
+        emFWHM = results['emFWHM']
+        emFWHMerr = results['emFWHMerr']
+        
+        ### call the plotting function
+        plotInversion(
+            R, data[I:J], err[I:J], RgridB, emissivity[I:J], 
+            emissivityErr[I:J], backprojection[I:J], time[I:J], emMaxR[I:J], 
+            emMax[I:J], emR0[I:J], emR1[I:J], emFWHM[I:J], emFWHMerr[I:J], 
+            savePath=savePathInversion, close=close
+        )
+        
+    except KeyError:
+        pass
+    
+    try:
+        neutral_version = results['neutral_version']
+        
+        ### load the results
+        Rprofile = results['Rprofile']
+        time = results['time']
+        emissivity = results['emissivity']
+        emissivityErr = results['emissivityErr']
+        emMax = results['emMax']
+        emMaxR = results['emMaxR']
+        emR0 = results['emR0']
+        emR1 = results['emR1']
+        emFWHM = results['emFWHM']
+        emFWHMerr = results['emFWHMerr']
+        Rind = results['Rind']
+        RendThomson = results['RendThomson']
+        ioniseRate = results['ioniseRate']
+        ioniseErr = results['ioniseErr']
+        neutralDensity = results['neutralDensity']
+        neutralErr = results['neutralErr']
+        ioniseMax = results['ioniseMax']
+        ioniseMaxR = results['ioniseMaxR']
+        ioniseR0 = results['ioniseR0']
+        ioniseR1 = results['ioniseR1']
+        ioniseFWHM = results['ioniseFWHM']
+        ioniseFWHMerr = results['ioniseFWHMerr']
+        neutralMax = results['neutralMax']
+        neutralMaxR = results['neutralMaxR']
+        neutralR1 = results['neutralR1']
+        neutralR2 = results['neutralR2']
+        neutralR3 = results['neutralR3']
+        neutralWidth1 = results['neutralWidth1']
+        neutralWidth1err = results['neutralWidth1err']
+        neutralWidth2 = results['neutralWidth2']
+        neutralWidth2err = results['neutralWidth2err']
+        neutralWidth3 = results['neutralWidth3']
+        neutralWidth3err = results['neutralWidth3err']
+        neutralR1A = results['neutralR1A']
+        neutralR2A = results['neutralR2A']
+        neutralR3A = results['neutralR3A']
+        figN0 = results['figN0']
+        psiN = results['psiN']
+        neutralRatio = results['neutralRatio']
+        
+        ### call the plotting function
+        plotResults(
+            Rprofile, emissivity[I:J,Rind:], emissivityErr[I:J,Rind:], 
+            emMaxR[I:J], emMax[I:J], emR0[I:J], emR1[I:J], emFWHM[I:J], 
+            emFWHMerr[I:J], ioniseRate[I:J], ioniseErr[I:J], ioniseMax[I:J], 
+            ioniseMaxR[I:J], ioniseR0[I:J], ioniseR1[I:J], ioniseFWHM[I:J], 
+            ioniseFWHMerr[I:J], neutralDensity[I:J], neutralErr[I:J], 
+            neutralMax[I:J], neutralMaxR[I:J], neutralR1[I:J], neutralR2[I:J], 
+            neutralR3[I:J], neutralWidth1[I:J], neutralWidth1err[I:J], 
+            neutralWidth2[I:J], neutralWidth2err[I:J], neutralWidth3[I:J], 
+            neutralWidth3err[I:J], neutralR1A[I:J], neutralR2A[I:J], 
+            neutralR3A[I:J], RendThomson[I:J], time[I:J], figN0=figN0[I:J], 
+            neutralRatio=neutralRatio[I:J], psiN=psiN[I:J], 
+            savePath=savePathResults, close=close
+        )
+        
+    except KeyError:
+        pass
 
 
-    ### call the plotting functions
-    plotInversion(
-        R, data[I:J], err[I:J], RgridB, emissivity[I:J], emissivityErr[I:J], 
-        backprojection[I:J], time[I:J], emMaxR[I:J], emMax[I:J], emR0[I:J], 
-        emR1[I:J], emFWHM[I:J], emFWHMerr[I:J], savePath=savePathInversion, 
-        close=close
-    )
-
-    plotResults(
-        Rprofile, emissivity[I:J,Rind:], emissivityErr[I:J,Rind:], 
-        emMaxR[I:J], emMax[I:J], emR0[I:J], emR1[I:J], emFWHM[I:J], 
-        emFWHMerr[I:J], ioniseRate[I:J], ioniseErr[I:J], ioniseMax[I:J], 
-        ioniseMaxR[I:J], ioniseR0[I:J], ioniseR1[I:J], ioniseFWHM[I:J], 
-        ioniseFWHMerr[I:J], neutralDensity[I:J], neutralErr[I:J], 
-        neutralMax[I:J], neutralMaxR[I:J], neutralR1[I:J], neutralR2[I:J], 
-        neutralR3[I:J], neutralWidth1[I:J], neutralWidth1err[I:J], 
-        neutralWidth2[I:J], neutralWidth2err[I:J], neutralWidth3[I:J], 
-        neutralWidth3err[I:J], neutralR1A[I:J], neutralR2A[I:J], 
-        neutralR3A[I:J], RendThomson[I:J], time[I:J], figN0=figN0[I:J], 
-        neutralRatio=neutralRatio[I:J], psiN=psiN[I:J], 
-        savePath=savePathResults, close=close
-    )
     if show:
         plt.show()
     
