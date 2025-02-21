@@ -16,7 +16,9 @@ import os
 ### shot number
 shotn = 50499
 ### time range
-trange = [0.2,1.0]
+# trange = [0.2,1.0]
+trange = [0.5,0.55]
+
 
 ### for the plots
 xlim = [1.25, 1.50]
@@ -49,7 +51,7 @@ R = np.linspace(xlim[0], xlim[1], 100)
 time2, ne, neErr, Rraw = HSV.getThomson(shotn, 'n_e', trange=trange)
 ### check if the time range is fine between the two
 if (len(time) != len(time2)) or (
-    not (np.isclose(time == time2).all() and np.isclose(time2 == time).all())
+    not (np.isclose(time, time2).all() and np.isclose(time2, time).all())
     ):
     ### change trange if need be, and reload density
     trange = [time[0],time[-1]]

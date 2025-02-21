@@ -1,4 +1,3 @@
-import calcam
 import cv2
 from functions import findNearest
 import matplotlib.pyplot as plt
@@ -64,6 +63,7 @@ def getRz(Rzfile, I0, I1, J0, J1):
 
 
 def getVectors(calibFile):
+    import calcam
     calib = calcam.Calibration(calibFile)
     
     los = calib.get_los_direction()
