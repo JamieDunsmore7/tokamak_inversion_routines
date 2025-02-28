@@ -56,8 +56,8 @@ def getExposure(shotn, mult=1e-6):
 def getRz(Rzfile, I0, I1, J0, J1):
     
     data = np.load(Rzfile)
-    R = data['Rmin'][I0,J0:J1]
-    z = data['zmin'][I0,J0:J1]
+    R = data['Rmin'][I0:I1,J0:J1].mean(axis=0)
+    z = data['zmin'][I0:I1,J0:J1].mean(axis=0)
     
     return R, z
 
@@ -194,7 +194,7 @@ def applyVignette(data, err, inputDict, shotn, dSlice, flipBool, rEnd):
 def prepData(rawData, dSlice, goodChans, flipBool, rEnd, tend, sysErr=5.):
     ### preparing data for the inversion routine
     ### raw should be in the shape (nz, nR, nt)
-    data = rawData[dSlice][0] # remove z axis so it's 2D
+    data = rawData[dSlice].mean(axis=0)
     data = data[goodChans,:].T
     if flipBool:
         data = np.flip(data, axis=1)
