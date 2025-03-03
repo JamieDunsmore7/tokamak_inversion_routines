@@ -34,6 +34,7 @@ I0 = inputDict['I0']
 I1 = inputDict['I1']
 J0 = inputDict['J0']
 J1 = inputDict['J1']
+dt = inputDict['dt']
 tend = inputDict['tend']
 raverage = inputDict['raverage']
 taverage = inputDict['taverage']
@@ -95,13 +96,15 @@ dL = fn.makeDL(Rgrid, R)
 ###############################################################################
 
 
+### quicker than loading the whole dataset
+trange = HSV.makeTimeRange(shotn, T0, T1, dt=dt)
 ### load the data from UDA
-rawData, time = HSV.get(shotn)
+rawData, time = HSV.get(shotn, trange=trange)
 
-### TODO: currently only good for testing 1 row of pixels
+### 
 dSlice = (slice(I0,I1), slice(J0,J1), slice(0,len(time)))
 data, err = HSV.prepData(
-    rawData, dSlice, goodChans, flipBool, rEnd, tend, sysErr=sysErr
+    shotn, rawData, dSlice, goodChans, flipBool, rEnd, tend, sysErr=sysErr
 )
 ### average in space and time if wanted
 if raverage:
@@ -111,11 +114,11 @@ if taverage:
     data = HSV.makeTimeAverage(data, taverage)
     err = HSV.makeTimeAverage(err, taverage)
 
-### chop down to selected time range
-tSlice = slice(T0, T1)
-data = data[tSlice,:]
-err = err[tSlice,:]
-time = time[tSlice]
+# ### chop down to selected time range
+# tSlice = slice(T0, T1)
+# data = data[tSlice,:]
+# err = err[tSlice,:]
+# time = time[tSlice]
 
 ### convert to ph m^-2 sr^-1
 if photons:

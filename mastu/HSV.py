@@ -191,7 +191,70 @@ def applyVignette(data, err, inputDict, shotn, dSlice, flipBool, rEnd):
     return data, err
 
 
-def prepData(rawData, dSlice, goodChans, flipBool, rEnd, tend, sysErr=5.):
+def makeTimeRange(shotn, T0, T1, dt=0.):
+    
+    time = client.get_images('rba', shotn, frame_number=0).frame_times
+    try:
+        time0 = time[T0]
+    except IndexError:
+        print(f'Index error, T0={T0}, len(time)={len(time)}')
+        print('Setting T0=-1')
+    try:
+        time1 = time[T1]
+    except IndexError:
+        print(f'Index error, T1={T1}, len(time)={len(time)}')
+        print('Setting T1=-1')
+    
+    timeRange = [time0,time1]
+    
+    return timeRange
+
+
+def makeBackground(shotn, tend, dSlice, goodChans, flipBool, rEnd):
+    
+    backgroundBool = True
+    ### prepping the data
+    if (tend != -1):
+        trange = makeTimeRange(shotn, tend, -1, dt=0.)
+
+        ### check if there is data at the end
+        if not np.isclose(trange[0], trange[1]):
+            ### get the data and average over z-drection if need be
+            data = get(shotn, trange=trange)[0][dSlice[:-1]].mean(axis=0)
+            ### rotate
+            data = data[goodChans,:].T
+
+            if flipBool:
+                data = np.flip(data, axis=1)
+
+            if rEnd:
+                data = np.insert(data, data.shape[1], 0., axis=1)
+
+            background = np.mean(data, axis=0, keepdims=True)
+        
+        else:
+            backgroundBool = False
+
+    else:
+        backgroundBool = False
+    
+    if not backgroundBool:
+        print('No background subtraction done')
+        if rEnd:
+            background = np.zeros((1,len(goodChans)+1))
+        else:
+            background = np.zeros((1,len(goodChans)))
+    
+    # dataLowEnd = data - background
+    # errLow = np.std(dataLowEnd, axis=0, keepdims=True) / 3.
+    errLow = np.std(data, axis=0, keepdims=True)
+    
+    return background, errLow
+
+
+def prepData(
+    shotn, rawData, dSlice, goodChans, flipBool, rEnd, tend, sysErr=5.
+    ):
     ### preparing data for the inversion routine
     ### raw should be in the shape (nz, nR, nt)
     data = rawData[dSlice].mean(axis=0)
@@ -204,30 +267,42 @@ def prepData(rawData, dSlice, goodChans, flipBool, rEnd, tend, sysErr=5.):
     nR = data.shape[1]
     ### amendment 8thJan2025
     ### takes into account long plasmas
-    if (tend != -1) and (tend < (data.shape[0]-1)):
-        background = np.mean(data[tend:,:], axis=0, keepdims=True)
-    else:
-        print('No background subtraction done')
-        background = np.zeros((1,data.shape[1]))
+    ### amendment 28Feb2025
+    ### changes to allow it to load less data
+    # if (tend != -1) and (tend < (data.shape[0]-1)):
+    #     background = np.mean(data[tend:,:], axis=0, keepdims=True)
+    # else:
+    #     print('No background subtraction done')
+    #     background = np.zeros((1,data.shape[1]))
+    ### background is the mean of the no-plasma signal
+    ### errLow is the std-dev of the no-plasma signal
+    background, errLow = makeBackground(
+        shotn, tend, dSlice, goodChans, flipBool, rEnd
+    )
     ### end of amendment
+    ### end of amendment 2
+    # errLow = np.std(dataLow[tend:,:], axis=0, keepdims=True) / 3.
+    
     dataLow = data - background
-    errLow = np.std(dataLow[tend:,:], axis=0, keepdims=True) / 3.
-    ind1 = np.r_[1,0:nR-1]
-    ind2 = np.r_[1:nR,nR-2]
-    errLow += np.std(
-        np.diff(
-            dataLow - (dataLow[:,ind1] + dataLow[:,ind2]) / 2., axis=0
-        ), axis=0
-    ) / np.sqrt(2.)
     dataLow -= dataLow[:,[-1]]
-    errLow = np.maximum(errLow, -dataLow)
+    
+    # ind1 = np.r_[1,0:nR-1]
+    # ind2 = np.r_[1:nR,nR-2]
+    # errLow += np.std(
+    #     np.diff(
+    #         dataLow - (dataLow[:,ind1] + dataLow[:,ind2]) / 2., axis=0
+    #     ), axis=0
+    # ) / np.sqrt(2.)
     
     calf, calfErr = makeCal(nR, sysErr=sysErr)
+    
+    errLow = np.sqrt((dataLow * calfErr)**2 + errLow**2)
+    errLow = np.maximum(errLow, -dataLow)
+    errLow[np.isclose(errLow, 0.)] = np.inf
+    
     data = dataLow * calf
-    err = np.sqrt(
-        (errLow * calf)**2 + (dataLow * calfErr)**2
-    )
-    return data, err
+    
+    return data, errLow
 
 
 def makeCal(nR, sysErr=5.):
