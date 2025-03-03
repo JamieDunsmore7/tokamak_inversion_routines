@@ -1,13 +1,13 @@
 {
     "shotn": 50499,
     "Rzfile": "/home/sthoma/tokamak_inversion_routines/mastu/Coordinates/50499_1037.npz",
+    "maskFile": "/home/sthoma/tokamak_inversion_routines/mastu/Masks/50499_1037.npy",
 
 
     "I0": 239,
     "I1": 240,
     "J0": 32,
     "J1": 216,
-    "dt": 0.0,
     "tend": 1103,
     "raverage": 0,
     "taverage": 1,

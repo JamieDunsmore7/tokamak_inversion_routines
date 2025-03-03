@@ -28,13 +28,13 @@ inputDict = fn.loadDict(dictFile)
 ### unzip the dictionary
 shotn = inputDict['shotn']
 Rzfile = inputDict['Rzfile']
+maskFile = inputDict['maskFile']
 
 ### the inputs to select which bits of video, and averaging
 I0 = inputDict['I0']
 I1 = inputDict['I1']
 J0 = inputDict['J0']
 J1 = inputDict['J1']
-dt = inputDict['dt']
 tend = inputDict['tend']
 raverage = inputDict['raverage']
 taverage = inputDict['taverage']
@@ -97,7 +97,7 @@ dL = fn.makeDL(Rgrid, R)
 
 
 ### quicker than loading the whole dataset
-trange = HSV.makeTimeRange(shotn, T0, T1, dt=dt)
+trange = HSV.makeTimeRange(shotn, T0, T1)
 ### load the data from UDA
 rawData, time = HSV.get(shotn, trange=trange)
 
@@ -144,6 +144,13 @@ scale = fn.makeScale(data)
 ###############################################################################
 
 
+### load the mask if using one
+try:
+    mask = np.load(maskFile)
+except TypeError as e:
+    print('No maskFile, not using a mask')
+    mask = np.ones(data.shape[1]).astype(bool)
+
 ### make the regularisation band matrix
 D = fn.regulMatrix(nGrid, biasedEdges=biasedEdges)
 ### making empty arrays for results
@@ -176,8 +183,8 @@ for i in range(nT):
 
     emissivity[i,indSpace], emissivityErr[i,indSpace], backprojection[i], \
         chi2[i], gamma[i] = fn.inversion(
-            data[i], err[i], dL, scale, nGrid, Q, D, indLos, indSpace,
-            nFisher=nFisher, regGuess=regGuess, regMin=regMin
+            data[i][mask], err[i][mask], dL, scale, nGrid, Q, D, indLos, 
+            indSpace, nFisher=nFisher, regGuess=regGuess, regMin=regMin
     )
 
     ### multiply the answers by scale
@@ -419,6 +426,7 @@ if saveFile:
         R = R,
         data = data,
         err = err,
+        mask = mask,
         time = time,
         Rgrid = Rgrid,
         RgridB = RgridB,

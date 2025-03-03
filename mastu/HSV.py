@@ -8,7 +8,7 @@ client = pyuda.Client()
 from scipy.special import ndtr
 
 
-def get(shotn, trange=[-1.,-1.], tind=None):
+def get(shotn, trange=[-1.,-1.], tind=None, end=False):
     if tind is not None:
         return getSingle(shotn, tind)
     
@@ -25,8 +25,16 @@ def get(shotn, trange=[-1.,-1.], tind=None):
         t0 = findNearest(time, trange[0])
         t1 = findNearest(time, trange[1])
         T = t1 - t0
-        time = time[t0:t1]
-        data = client.get_images('rba', shotn, first_frame=t0, last_frame=t1)
+        if end:
+            time = time[t0:t1+1]
+            data = client.get_images(
+                'rba', shotn, first_frame=t0, last_frame=t1+1
+            )
+        else:
+            time = time[t0:t1+1]
+            data = client.get_images(
+                'rba', shotn, first_frame=t0, last_frame=t1
+            )
         
     frames = np.zeros((I,J,T)).astype(dtype)
     for i in range(0, T):
@@ -191,7 +199,7 @@ def applyVignette(data, err, inputDict, shotn, dSlice, flipBool, rEnd):
     return data, err
 
 
-def makeTimeRange(shotn, T0, T1, dt=0.):
+def makeTimeRange(shotn, T0, T1):
     
     time = client.get_images('rba', shotn, frame_number=0).frame_times
     try:
@@ -215,12 +223,14 @@ def makeBackground(shotn, tend, dSlice, goodChans, flipBool, rEnd):
     backgroundBool = True
     ### prepping the data
     if (tend != -1):
-        trange = makeTimeRange(shotn, tend, -1, dt=0.)
+        trange = makeTimeRange(shotn, tend, -1)
 
         ### check if there is data at the end
         if not np.isclose(trange[0], trange[1]):
             ### get the data and average over z-drection if need be
-            data = get(shotn, trange=trange)[0][dSlice[:-1]].mean(axis=0)
+            data = get(
+                shotn, trange=trange, end=True
+            )[0][dSlice[:-1]].mean(axis=0)
             ### rotate
             data = data[goodChans,:].T
 
@@ -247,9 +257,20 @@ def makeBackground(shotn, tend, dSlice, goodChans, flipBool, rEnd):
     
     # dataLowEnd = data - background
     # errLow = np.std(dataLowEnd, axis=0, keepdims=True) / 3.
-    errLow = np.std(data, axis=0, keepdims=True)
+    errLow = np.std(data-background, axis=0, keepdims=True)
     
     return background, errLow
+
+
+def loadMask(maskFile, flipBool, rEnd):
+    
+    mask = np.load(maskFile)
+    if flipBool:
+        mask = np.flip(mask)
+    if rEnd:
+        mask = np.insert(mask, len(mask), True)
+    
+    return mask
 
 
 def prepData(

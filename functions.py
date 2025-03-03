@@ -196,6 +196,12 @@ def inversion(data, err, dL, scale, nGrid, Q, D, indLos,
     backprojection = fit = np.dot(p*w, U.T) * err
     chi2 = np.sum((mean_d[indLos] - fit)**2) / len(fit)
     gamma = np.interp(g0, np.log(S2), Q)
+    print(' got to the end of my piece of poo ')
+    print('Y', Y.shape)
+    print('yErr', yErr.shape)
+    print('backprojection', backprojection.shape)
+    print('chi2', chi2)
+    print('gamma', gamma)
     
     return Y, yErr, backprojection, chi2, gamma
 
