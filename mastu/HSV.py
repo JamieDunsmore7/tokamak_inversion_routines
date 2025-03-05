@@ -31,7 +31,7 @@ def get(shotn, trange=[-1.,-1.], tind=None, end=False):
                 'rba', shotn, first_frame=t0, last_frame=t1+1
             )
         else:
-            time = time[t0:t1+1]
+            time = time[t0:t1]
             data = client.get_images(
                 'rba', shotn, first_frame=t0, last_frame=t1
             )

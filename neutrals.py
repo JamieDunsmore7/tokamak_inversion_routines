@@ -2,7 +2,7 @@
 
 ### author: Steven Thomas
 ### email:  steven.thomas@ukaea.uk; sthoma@mit.edu
-neutral_version = '1.7.3'
+neutral_version = '1.8.0'
 
 
 import functions as fn
@@ -13,7 +13,7 @@ import sys
 
 # saveDir = '/common/BES_analysis/rbaResults/'
 saveDir = '/home/sthoma/Documents/Results/rba/'
-plot = True
+plot = False
 
 
 ###############################################################################
@@ -79,6 +79,7 @@ R = inversion['R']
 data = inversion['data']
 nT, nR = data.shape
 err = inversion['err']
+mask = inversion['mask']
 time = inversion['time']
 Rgrid = inversion['Rgrid']
 RgridB = inversion['RgridB']
@@ -312,7 +313,7 @@ if saveFile:
 
     ### create directory and change filename if needed
     npzName = loadFile.split('/')[-1].replace('invert', 'neutral')
-    npzName = fn.makeFName(saveDir, shotn, npzName)
+    npzName = fn.makeFName(saveDir, shotn, npzName, kind='str')
     
     np.savez(npzName,
         R = R,
@@ -369,6 +370,9 @@ if saveFile:
         figN0 = figN0,
         psiN = psiN,
         neutralRatio = neutralRatio,
+        invert_version = inversion['invert_version'],
+        neutral_version = neutral_version,
+        mask = mask,
     )
 
     ### make filename for dictionary of inputs
@@ -389,6 +393,7 @@ if saveFile:
 
 if plot:
     import plotFunctions as pf
+    fills = pf.makeFills(mask, R)
     pf.plotResults(
         Rprofile, emissivity[:,Rind:], emissivityErr[:,Rind:], emMaxR, emMax,
         emR0, emR1, emFWHM, emFWHMerr, ioniseRate, ioniseErr, ioniseMax,
@@ -396,7 +401,7 @@ if plot:
         neutralDensity, neutralErr, neutralMax, neutralMaxR, neutralR1,
         neutralR2, neutralR3, neutralWidth1, neutralWidth1err, neutralWidth2,
         neutralWidth2err, neutralWidth3, neutralWidth3err, neutralR1A,
-        neutralR2A, neutralR3A, RendThomson, time, figN0=figN0, 
+        neutralR2A, neutralR3A, RendThomson, time, fills, figN0=figN0, 
         neutralRatio=neutralRatio, psiN=psiN,
     )
     from matplotlib.pyplot import show

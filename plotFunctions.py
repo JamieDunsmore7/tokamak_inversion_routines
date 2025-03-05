@@ -4,10 +4,29 @@ from matplotlib.ticker import AutoMinorLocator
 import numpy as np
 
 
+###
+def makeFills(mask, R):
+    
+    if np.all(mask):
+        fills = np.zeros((0, 2))
+        
+    else:
+        diffMask = np.diff(mask)
+        inds = np.where(diffMask)[0]
+        N = np.count_nonzero(diffMask)
+        fills = np.zeros((N//2,2))
+        
+        for i in range(0, N, 2):
+            fills[i//2,0] = R[inds[i]+1]
+            fills[i//2,1] = R[inds[i+1]]
+            
+    return fills
+
+
 ### function for plotting inversion with reconstruction and raw-data
 def plotInversion(
     R, data, err, RgridB, y, yErr, backprojection, time, Rmax, yMax, R0, R1, 
-    fwhm, fwhmErr, savePath=None, close=False
+    fwhm, fwhmErr, fills, savePath=None, close=False
     ):
     for i in range(data.shape[0]):
         fig, ax = plt.subplots(1, 1, figsize=(3.5,3), dpi=150)
@@ -32,6 +51,13 @@ def plotInversion(
         )
         xplot = [0.2,1.875]
         ax.set_xlim(xplot)
+        ylim = ax.get_ylim()
+        ax.set_ylim(ylim)
+        for j in range(0, fills.shape[0]):
+            ax.fill_between(
+                fills[j], [ylim[0],ylim[0]], 
+                [ylim[1],ylim[1]], color='C3', alpha=0.2
+            )
         ax.plot(xplot, [0.,0.], '-k', lw=0.8, zorder=1)
         ax.set_xlabel('R (m)', fontsize=9)
         ax.set_ylabel('Units', fontsize=9)
@@ -53,7 +79,7 @@ def plotResults(
     R, emiss, emissErr, emMaxR, emMax, emR0, emR1, emFWHM, emFWHMerr, Siz,
     SizErr, SizMax, SizMaxR, SizR0, SizR1, SizFWHM, SizFWHMerr, n0, n0Err,
     n0Max, n0MaxR, n0R1, n0R2, n0R3, n0w1, n0w1err, n0w2, n0w2err, n0w3, 
-    n0w3err, n0R1A, n0R2A, n0R3A, Rend, time, figN0=None, neutralRatio=None, 
+    n0w3err, n0R1A, n0R2A, n0R3A, Rend, time, fills, figN0=None, neutralRatio=None, 
     psiN=None, yMult=1.1, xlim=[1.25,1.50], n0lim=1e14, savePath=None, 
     close=False
     ):
@@ -89,6 +115,12 @@ def plotResults(
         ax[0].set_ylabel('$\\epsilon$ (m$^{-3}$ s$^{-1}$)')
         ax[0].yaxis.get_offset_text().set_size(9)
         ax[0].set_ylim([0., (emiss[i]+emissErr[i]).max() * yMult])
+        ylim = ax[0].get_ylim()
+        for j in range(0, fills.shape[0]):
+            ax[0].fill_between(
+                fills[j], [ylim[0],ylim[0]], 
+                [ylim[1],ylim[1]], color='C3', alpha=0.1
+            )
         ax[0].yaxis.set_minor_locator(AutoMinorLocator())
         
         ax[1].plot(R, Siz[i], '-', c='C1')
@@ -119,6 +151,11 @@ def plotResults(
             [ylim[1],ylim[1]], color='k', alpha=0.1
             )
         ax[1].set_ylim(ylim)
+        for j in range(0, fills.shape[0]):
+            ax[1].fill_between(
+                fills[j], [ylim[0],ylim[0]], 
+                [ylim[1],ylim[1]], color='C3', alpha=0.1
+            )
         ax[1].yaxis.set_minor_locator(AutoMinorLocator())
         
         ax[2].plot(R, n0[i], '-', c='C2', mfc='None')
@@ -179,6 +216,11 @@ def plotResults(
             [ylim[1],ylim[1]], color='k', alpha=0.1
             )
         ax[2].set_yscale('log')
+        for j in range(0, fills.shape[0]):
+            ax[2].fill_between(
+                fills[j], [ylim[0],ylim[0]], 
+                [ylim[1],ylim[1]], color='C3', alpha=0.1
+            )
 
         if neutralRatio is not None:
             ax[2].text(
@@ -288,6 +330,7 @@ if __name__ == "__main__":
         R = results['R']
         data = results['data']
         err = results['err']
+        mask = results['mask']
         time = results['time']
         RgridB = results['RgridB']
         emissivity = results['emissivity']
@@ -300,12 +343,13 @@ if __name__ == "__main__":
         emFWHM = results['emFWHM']
         emFWHMerr = results['emFWHMerr']
         
+        fills = makeFills(mask, R)
         ### call the plotting function
         plotInversion(
             R, data[I:J], err[I:J], RgridB, emissivity[I:J], 
             emissivityErr[I:J], backprojection[I:J], time[I:J], emMaxR[I:J], 
             emMax[I:J], emR0[I:J], emR1[I:J], emFWHM[I:J], emFWHMerr[I:J], 
-            savePath=savePathInversion, close=close
+            fills[I:J], savePath=savePathInversion, close=close
         )
         
     except KeyError:
@@ -351,11 +395,14 @@ if __name__ == "__main__":
         neutralR1A = results['neutralR1A']
         neutralR2A = results['neutralR2A']
         neutralR3A = results['neutralR3A']
+        R = results['R']
+        mask = results['mask']
         figN0 = results['figN0']
         psiN = results['psiN']
         neutralRatio = results['neutralRatio']
         
         ### call the plotting function
+        fills = makeFills(mask, R)
         plotResults(
             Rprofile, emissivity[I:J,Rind:], emissivityErr[I:J,Rind:], 
             emMaxR[I:J], emMax[I:J], emR0[I:J], emR1[I:J], emFWHM[I:J], 
@@ -366,8 +413,8 @@ if __name__ == "__main__":
             neutralR3[I:J], neutralWidth1[I:J], neutralWidth1err[I:J], 
             neutralWidth2[I:J], neutralWidth2err[I:J], neutralWidth3[I:J], 
             neutralWidth3err[I:J], neutralR1A[I:J], neutralR2A[I:J], 
-            neutralR3A[I:J], RendThomson[I:J], time[I:J], figN0=figN0[I:J], 
-            neutralRatio=neutralRatio[I:J], psiN=psiN[I:J], 
+            neutralR3A[I:J], RendThomson[I:J], time[I:J], fills[I:J], 
+            figN0=figN0[I:J], neutralRatio=neutralRatio[I:J], psiN=psiN[I:J], 
             savePath=savePathResults, close=close
         )
         

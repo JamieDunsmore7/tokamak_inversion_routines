@@ -2,7 +2,7 @@
 
 ### author: Steven Thomas
 ### email:  steven.thomas@ukaea.uk; sthoma@mit.edu
-__version__ = '1.7.2'
+__version__ = '1.8.0'
 
 
 import functions as fn
@@ -478,6 +478,7 @@ if saveFile:
         figN0 = figN0,
         psiN = psiN,
         neutralRatio = neutralRatio,
+        __version__ = __version__,
     )
 
     ### make filename for dictionary of inputs

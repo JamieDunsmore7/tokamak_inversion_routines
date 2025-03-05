@@ -2,7 +2,7 @@
 
 ### author: Steven Thomas
 ### email:  steven.thomas@ukaea.uk; sthoma@mit.edu
-invert_version = '1.7.3'
+invert_version = '1.8.0'
 
 
 import functions as fn
@@ -13,7 +13,7 @@ import sys
 
 # saveDir = '/common/BES_analysis/rbaResults/'
 saveDir = '/home/sthoma/Documents/Results/rba/'
-plot = True
+plot = False
 
 
 ###############################################################################
@@ -181,20 +181,6 @@ Rprofile = RgridB[Rind:]
 
 ### iterate over the times
 for i in range(nT):
-    print('##############################################################')
-    print('mask', mask.shape)
-    print('data', data.shape)
-    print('err', err.shape)
-    print('dL', dL.shape)
-    print('scale', scale)
-    print('nGrid', nGrid)
-    print('Q', Q.shape)
-    print('D', D.shape)
-    print('indLos', indLos)
-    print('indSpace', indSpace)
-    print(nFisher, regGuess, regMin)
-    print('##############################################################')
-
     emissivity[i,indSpace], emissivityErr[i,indSpace], backprojection[i,mask], \
         chi2[i], gamma[i] = fn.inversion(
             data[i][mask], err[i][mask], dL[mask,:], scale, nGrid, Q, D, 
@@ -228,7 +214,6 @@ for i in range(nT):
 ### add the file version number
 inputDict['invert_version'] = invert_version
 
-
 if saveFile:
 
     ### create directory and change filename if needed
@@ -254,6 +239,7 @@ if saveFile:
         emFWHMerr = emFWHMerr,
         Rind = Rind,
         Rprofile = Rprofile,
+        invert_version = invert_version, 
         # profileTemp = profileTemp,
         # profileDensity = profileDensity,
         # RendThomson = RendThomson,
@@ -310,9 +296,11 @@ if saveFile:
 
 if plot:
     import plotFunctions as pf
+    
+    fills = pf.makeFills(mask, R)
     pf.plotInversion(
         R, data, err, RgridB, emissivity, emissivityErr, backprojection, time,
-        emMaxR, emMax, emR0, emR1, emFWHM, emFWHMerr,
+        emMaxR, emMax, emR0, emR1, emFWHM, emFWHMerr, fills
     )
     from matplotlib.pyplot import show
     show()
