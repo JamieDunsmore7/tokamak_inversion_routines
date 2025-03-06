@@ -14,6 +14,15 @@ def makeFills(mask, R):
         diffMask = np.diff(mask)
         inds = np.where(diffMask)[0]
         N = np.count_nonzero(diffMask)
+        
+        if N % 2:
+            if mask[0]:
+                inds = np.append(inds, len(mask)-1)
+            else:
+                inds = np.insert(inds, 0, 0)
+            
+            N += 1
+        
         fills = np.zeros((N//2,2))
         
         for i in range(0, N, 2):
@@ -319,7 +328,6 @@ if __name__ == "__main__":
     savePathResults = savePath + "emissIoniseNeutral/"
     if not os.path.exists(savePathResults):
         os.makedirs(savePathResults)
-
 
     ### load the results
     results = np.load(resultsFile)

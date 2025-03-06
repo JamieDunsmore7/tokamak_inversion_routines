@@ -1,15 +1,8 @@
--------------------Loading module Divertor-------------------
--------------------Loading module Utilities-------------------
-ERROR: grid point (R,Z)=(0.66625,1.1687500000000002) was found to be within boundary but has |psi| < |psi_bound|. Setting this point to zero, i.e. assuming it is outside the boundary. (possible precision error in allocating grid point to inside / outside plasma) 0.00487762888464698,0.004877815110669112
-ERROR: grid point (R,Z)=(0.66625,1.1687500000000002) was found to be within boundary but has |psi| < |psi_bound|. Setting this point to zero, i.e. assuming it is outside the boundary. (possible precision error in allocating grid point to inside / outside plasma) 0.00487762888464698,0.004877815110669112
-ERROR: grid point (R,Z)=(0.66625,1.1687500000000002) was found to be within boundary but has |psi| < |psi_bound|. Setting this point to zero, i.e. assuming it is outside the boundary. (possible precision error in allocating grid point to inside / outside plasma) 0.00487762888464698,0.004877815110669112
-ERROR: grid point (R,Z)=(0.66625,1.1687500000000002) was found to be within boundary but has |psi| < |psi_bound|. Setting this point to zero, i.e. assuming it is outside the boundary. (possible precision error in allocating grid point to inside / outside plasma) 0.00487762888464698,0.004877815110669112
-ERROR: grid point (R,Z)=(0.66625,1.1687500000000002) was found to be within boundary but has |psi| < |psi_bound|. Setting this point to zero, i.e. assuming it is outside the boundary. (possible precision error in allocating grid point to inside / outside plasma) 0.00487762888464698,0.004877815110669112
 
 
 .npz file saved:
-     /home/sthoma/Documents/Results/rba/50499/rba_results_2.npz
+     /home/sthoma/Documents/Results/rba/50499/rba_results_invert_5.npz
 dictionary textfile saved:
-     /home/sthoma/Documents/Results/rba/50499/rba_results_2.txt
+     /home/sthoma/Documents/Results/rba/50499/rba_results_invert_5.txt
 
 

@@ -1,7 +1,7 @@
 {
     "shotn": 50499,
     "Rzfile": "/home/sthoma/tokamak_inversion_routines/mastu/Coordinates/50499_1037.npz",
-    "maskFile": "/home/sthoma/tokamak_inversion_routines/mastu/Masks/50499_1037.npy",
+    "maskFile": "/home/sthoma/tokamak_inversion_routines/mastu/Masks/50499_1037_bigmask.npy",
 
 
     "I0": 239,
@@ -15,7 +15,7 @@
     "T1": 1000,
 
 
-    "saveFile": "rba_results.npz",
+    "saveFile": "rba_results_bigmask.npz",
 
 
     "photons": 1,
