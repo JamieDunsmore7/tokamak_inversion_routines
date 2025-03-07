@@ -2,7 +2,7 @@
 
 ### author: Steven Thomas
 ### email:  steven.thomas@ukaea.uk; sthoma@mit.edu
-invert_version = '1.8.0'
+invert_version = '2.0.0'
 
 
 import functions as fn
@@ -13,7 +13,13 @@ import sys
 
 # saveDir = '/common/BES_analysis/rbaResults/'
 saveDir = '/home/sthoma/Documents/Results/rba/'
-plot = False
+try:
+    if sys.argv[2] == 'True':
+        plot = True
+    else:
+        plot = False
+except IndexError:
+    plot = False
 
 
 ###############################################################################

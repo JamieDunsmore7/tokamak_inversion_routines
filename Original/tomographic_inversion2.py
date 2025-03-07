@@ -156,7 +156,11 @@ class LLAMA_tomography():
 
         # the difference between the followin neighbor is calculated and then the standard error
         # is calculated for each channel
-        error_low += np.std(np.diff(data_low-(data_low[:,ind1]+data_low[:,ind2])/2,axis=0),axis=0)/np.sqrt(2)
+        error_low += np.std(
+            np.diff(
+                data_low-(data_low[:,ind1]+data_low[:,ind2])/2,axis=0
+            ),axis=0
+        )/np.sqrt(2)
 
         # remove offset estimated from the edge most detector
         offset_time = data_low[:,[-1]]

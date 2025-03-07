@@ -1,0 +1,2 @@
+/home/sthoma/tokamak_inversion_routines/functions.py:196: RuntimeWarning: invalid value encountered in multiply
+  backprojection = fit = np.dot(p*w, U.T) * err
