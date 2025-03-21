@@ -317,7 +317,8 @@ def loadMask(maskFile, flipBool, rEnd):
 
 
 def prepData(
-    shotn, rawData, dSlice, goodChans, flipBool, rEnd, tend, sysErr=5.
+    shotn, rawData, dSlice, goodChans, flipBool, 
+    rEnd, tend, sysErr=5., photon=False
     ):
     ### preparing data for the inversion routine
     ### raw should be in the shape (nz, nR, nt)
@@ -336,7 +337,13 @@ def prepData(
     
     calf, calfErr = makeCal(nR, sysErr=sysErr)
     
-    errLow = np.sqrt((data * calfErr)**2 + errLow**2)
+    if photon:
+        photonNoise = np.sqrt(data)
+        # photonNoise[np.isclose(photonNoise, 0.)] = np.sqrt(0.5)
+        errLow = np.sqrt((data * calfErr)**2 + errLow**2 + photonNoise**2)
+    else:
+        errLow = np.sqrt((data * calfErr)**2 + errLow**2)
+    
     errLow = np.maximum(errLow, -data)
     errLow[np.isclose(errLow, 0.)] = np.inf
     

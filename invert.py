@@ -57,6 +57,7 @@ saveFile = inputDict['saveFile']
 rEnd = inputDict['rEnd']
 nrMult = inputDict['nrMult']
 sysErr = inputDict['sysErr']
+photon = bool(inputDict['photon'])
 biasedEdges = bool(inputDict['biasedEdges'])
 nFisher = inputDict['nFisher']
 regGuess = inputDict['regGuess']
@@ -110,7 +111,8 @@ rawData, time = HSV.get(shotn, trange=trange)
 ### 
 dSlice = (slice(I0,I1), slice(J0,J1), slice(0,len(time)))
 data, err = HSV.prepData(
-    shotn, rawData, dSlice, goodChans, flipBool, rEnd, tend, sysErr=sysErr
+    shotn, rawData, dSlice, goodChans, flipBool, 
+    rEnd, tend, sysErr=sysErr, photon=photon
 )
 ### average in space and time if wanted
 if raverage:

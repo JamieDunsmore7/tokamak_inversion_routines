@@ -1,21 +1,21 @@
 {
-    "shotn": 50499,
-    "Rzfile": "/home/sthoma/tokamak_inversion_routines/mastu/Coordinates/50499_1037.npz",
-    "maskFile": "/home/sthoma/tokamak_inversion_routines/mastu/Masks/50499_1037.npy",
+    "shotn": 51347,
+    "Rzfile": "/home/sthoma/tokamak_inversion_routines/mastu/Coordinates/51267_684.npz",
+    "maskFile": "/home/sthoma/tokamak_inversion_routines/mastu/Masks/51267_684_bigmask.npy",
 
 
-    "I0": 239,
-    "I1": 240,
-    "J0": 32,
-    "J1": 216,
-    "tend": 1103,
+    "I0": 244,
+    "I1": 245,
+    "J0": 59,
+    "J1": 236,
+    "tend": 706,
     "raverage": 0,
     "taverage": 1,
-    "T0": 500,
-    "T1": 501,
+    "T0": 180,
+    "T1": 650,
 
 
-    "saveFile": "rba_results.npz",
+    "saveFile": "rba_results_experiment11.npz",
 
 
     "photons": 1,
@@ -36,8 +36,8 @@
     "wx": 140.377, 
     "wy": 140.257, 
     "shape": 0.19405, 
-    "amp": 152.067, 
-    "offset": 121.7288,
+    "amp": 1.0, 
+    "offset": 0.0,
 
 
     "rEnd": 1.6,

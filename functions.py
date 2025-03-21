@@ -248,8 +248,17 @@ def makeADAS(
 
 
 def makeDL(Rgrid, R):
-    dL = 2*(np.sqrt(np.maximum((Rgrid[1:])**2-R[:,None]**2,0)) 
-            -np.sqrt(np.maximum( Rgrid[:-1]**2-R[:,None]**2,0)))
+    dL = 2*(
+        np.sqrt(
+            np.maximum(
+                Rgrid[1:]**2 - R[:,None]**2, 0
+            )
+        ) - np.sqrt(
+            np.maximum(
+                Rgrid[:-1]**2 - R[:,None]**2, 0
+            )
+        )
+    )
     return dL
 
 
