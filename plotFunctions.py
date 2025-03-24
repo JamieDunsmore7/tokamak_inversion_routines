@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 from functions import findNearest
 import matplotlib.pyplot as plt
 from matplotlib.ticker import AutoMinorLocator
