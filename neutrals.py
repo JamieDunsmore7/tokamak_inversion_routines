@@ -2,7 +2,7 @@
 
 ### author: Steven Thomas
 ### email:  steven.thomas@ukaea.uk; sthoma@mit.edu
-neutral_version = '2.0.0'
+neutral_version = '2.1.0'
 
 
 import functions as fn
@@ -49,7 +49,7 @@ T1 = inputDict['T1']
 
 ### for converting to photons and account for vignetting
 photons = bool(inputDict['photons'])
-exposureMult = inputDict['exposureMult']
+# exposureMult = inputDict['exposureMult']
 vignette = bool(inputDict['vignette'])
 
 ### variables for the inversion, should be approximately constant

@@ -58,7 +58,19 @@ def getSingle(shotn, tind):
 
 
 def getExposure(shotn, mult=1e-6):
+    # TODO: need to remove the mult kwargs
     data = client.get_images('rba', shotn, frame_number=0)
+    multText = data.camera.split('')[-1]
+    if multText == '':
+        mult = 1e-6
+    elif multText == 'ns':
+        mult = 1e-9
+    else:
+        print(f'ERROR: unable to obtain exposure multiplier')
+        print(f'for shot # {shotn}.')
+        print(f'Exiting function.')
+        from sys import exit
+        exit(1)
     return data.exposure * mult
 
 
@@ -452,6 +464,7 @@ def count2photon(data, m=8.7051e12, mErr=6.4e9):
 
 
 def applyExposure(data, err, shotn, mult=1e-6):
+    # TODO: need to remove the mult kwargs
     exposureTime = getExposure(shotn, mult=mult)
     data /= exposureTime
     err /= exposureTime

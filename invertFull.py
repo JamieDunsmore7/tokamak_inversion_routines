@@ -43,7 +43,7 @@ T1 = inputDict['T1']
 
 ### for converting to photons and account for vignetting
 photons = bool(inputDict['photons'])
-exposureMult = inputDict['exposureMult']
+# exposureMult = inputDict['exposureMult']
 vignette = bool(inputDict['vignette'])
 
 ### variables for the inversion, should be approximately constant
@@ -125,7 +125,8 @@ if photons:
     data, err = HSV.applyCalibration(data, err, inputDict)
 
 ### convert to ph m^-2 sr^-1 s^-1
-data, err = HSV.applyExposure(data, err, shotn, mult=exposureMult)
+# data, err = HSV.applyExposure(data, err, shotn, mult=exposureMult)
+data, err = HSV.applyExposure(data, err, shotn)
 
 ### apply vignette function
 if vignette:

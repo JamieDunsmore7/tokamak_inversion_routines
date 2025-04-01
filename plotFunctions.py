@@ -37,7 +37,7 @@ def makeFills(mask, R):
 ### function for plotting inversion with reconstruction and raw-data
 def plotInversion(
     R, data, err, RgridB, y, yErr, backprojection, time, Rmax, yMax, R0, R1, 
-    fwhm, fwhmErr, fills, savePath=None, close=False
+    fwhm, fwhmErr, fills, xlim=[0.2,1.875], savePath=None, close=False
     ):
     for i in range(data.shape[0]):
         fig, ax = plt.subplots(1, 1, figsize=(3.5,3), dpi=150)
@@ -60,22 +60,34 @@ def plotInversion(
             f'FWHM\n{fwhm[i]*100:.2f}$\\pm$\n{fwhmErr[i]*100:.2f}cm', 
             ha='left', va='center', fontsize=8
         )
-        xplot = [0.2,1.875]
-        ax.set_xlim(xplot)
-        ylim = ax.get_ylim()
+        ax.set_xlim(xlim)
+        # ylim = ax.get_ylim()
+        x0 = findNearest(RgridB, xlim[0])
+        x1 = findNearest(RgridB, xlim[1])
+        ylim = [
+            (y[i,x0:x1]-yErr[i,x0:x1]).min(), 
+            (y[i,x0:x1]+yErr[i,x0:x1]).max() * 1.1
+        ]
+        if ylim[0] < 0:
+            ylim[0] = ylim[0] * 2.
+        else:
+            ylim[0] = 0.
         ax.set_ylim(ylim)
+        
         for j in range(0, fills.shape[0]):
             ax.fill_between(
                 fills[j], [ylim[0],ylim[0]], 
                 [ylim[1],ylim[1]], color='C3', alpha=0.2
             )
-        ax.plot(xplot, [0.,0.], '-k', lw=0.8, zorder=1)
+        ax.plot(xlim, [0.,0.], '-k', lw=0.8, zorder=1)
         ax.set_xlabel('R (m)', fontsize=9)
         ax.set_ylabel('Units', fontsize=9)
         ax.yaxis.get_offset_text().set_size(9)
         ax.legend(fancybox=1, framealpha=1, fontsize=8)
-        ax.tick_params(axis="both", which='both', labelsize=9, direction='in', 
-                    left=True, bottom=True, right=True, top=True)
+        ax.tick_params(
+            axis="both", which='both', labelsize=9, direction='in', 
+                    left=True, bottom=True, right=True, top=True
+        )
         ax.set_title(f'i={i:.0f}, t={time[i]:.4f}s', fontsize=10)
         plt.tight_layout()
         if savePath:
