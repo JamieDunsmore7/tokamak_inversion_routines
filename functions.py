@@ -7,16 +7,6 @@ from scipy.interpolate import RegularGridInterpolator
 from scipy.linalg import eigh, solve_banded
 
 
-def calcSiz(
-    emissivity, temperature, density, fExcite, 
-    scaleExcite, fIonise, scaleIonise
-    ):
-    SCD = fIonise((temperature, density)) * scaleIonise
-    EXC = fExcite((temperature, density)) * scaleExcite
-    ionisation = 4. * np.pi * emissivity * SCD / EXC
-    return ionisation
-
-
 def calcErr(
     function, y, emissivity, emissivityErr, temperature, 
     density, fExcite, scaleExcite, f2, scale2, percent=0.1
@@ -52,6 +42,16 @@ def calcN0(
     EXC = fExcite((temperature, density)) * scaleExcite * density
     n0 = ((4. * np.pi * emissivity) - REC) / EXC
     return n0
+
+
+def calcSiz(
+    emissivity, temperature, density, fExcite, 
+    scaleExcite, fIonise, scaleIonise
+    ):
+    SCD = fIonise((temperature, density)) * scaleIonise
+    EXC = fExcite((temperature, density)) * scaleExcite
+    ionisation = 4. * np.pi * emissivity * SCD / EXC
+    return ionisation
 
 
 def FindMin(F, x0, dx0, prod, S, U, tol=0.01):
@@ -200,14 +200,6 @@ def inversion(data, err, dL, scale, nGrid, Q, D, indLos,
     return Y, yErr, backprojection, chi2, gamma
 
 
-def loadDict(dictFile):
-    ### load the dictionary with parameters to run the script
-    with open(dictFile) as f:
-        textDict = f.read()
-    inputDict = json.loads(textDict)
-    return inputDict
-
-
 def loadADAS(line='dalpha'):
     # dir = './ADAS/'
     from os.path import dirname
@@ -222,6 +214,14 @@ def loadADAS(line='dalpha'):
         dataRecomb = recomb['data'] # ph m^3 s^-1
         dataIonise = ionise['data'] # m^3 s^-1
     return Te, ne, dataExcite, dataRecomb, dataIonise
+
+
+def loadDict(dictFile):
+    ### load the dictionary with parameters to run the script
+    with open(dictFile) as f:
+        textDict = f.read()
+    inputDict = json.loads(textDict)
+    return inputDict
 
 
 def makeADAS(
@@ -262,36 +262,6 @@ def makeDL(Rgrid, R):
     return dL
 
 
-def makeGrid(R, nGrid):
-    Rmin = R[0]
-    Rmax = R[-1]
-    Rgrid = np.linspace(Rmin, Rmax, nGrid)
-    RgridB = (Rgrid[1:] + Rgrid[:-1]) / 2.
-    return Rgrid, RgridB
-
-
-# def makeFName(saveDir, shotn, saveFile):
-#     ### creates directory if needed
-#     ### iterates filename to stop overwriting
-#     import os
-    
-#     saveStr = f'{saveDir}{shotn}/'
-#     if not os.path.exists(saveStr):
-#         os.makedirs(saveStr)
-    
-#     fname = f'{saveStr}{saveFile}'
-#     if os.path.isfile(fname):
-#         count = 1
-#         fname = fname.replace('.', f'_{count}.')
-#         while os.path.isfile(fname):
-#             check = f'_{count}.'
-#             count += 1
-#             replace = f'_{count}.'
-#             fname = fname.replace(check, replace)
-    
-#     return fname
-
-
 def makeFName(saveDir, shotn, saveFile, kind='int'):
     ### creates directory if needed
     ### iterates filename to stop overwriting
@@ -322,6 +292,14 @@ def makeFName(saveDir, shotn, saveFile, kind='int'):
             fname = fname.replace(check, replace)
     
     return fname
+
+
+def makeGrid(R, nGrid):
+    Rmin = R[0]
+    Rmax = R[-1]
+    Rgrid = np.linspace(Rmin, Rmax, nGrid)
+    RgridB = (Rgrid[1:] + Rgrid[:-1]) / 2.
+    return Rgrid, RgridB
 
 
 def makeScale(data):

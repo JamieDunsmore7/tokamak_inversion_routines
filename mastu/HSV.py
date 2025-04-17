@@ -60,7 +60,7 @@ def getSingle(shotn, tind):
 def getExposure(shotn, mult=1e-6):
     # TODO: need to remove the mult kwargs
     data = client.get_images('rba', shotn, frame_number=0)
-    multText = data.camera.split('')[-1]
+    multText = data.camera.split(sep=',')[-1]
     if multText == '':
         mult = 1e-6
     elif multText == 'ns':

@@ -91,11 +91,26 @@ R0, z0 = HSV.getRz(Rzfile, I0, I1, J0, J1)
 
 ### prepping R, adding extra, and flipping
 R, goodChans, flipBool = fn.prepR(R0, rEnd)
+
+### load the mask if using one
+try:
+    mask = HSV.loadMask(maskFile, flipBool, rEnd)
+except TypeError as e:
+    print('No maskFile, not using a mask')
+    mask = np.ones(data.shape[1]).astype(bool)
+
 ### grid to interpolate onto
-nGrid = int(len(R0) * nrMult)
-Rgrid, RgridB = fn.makeGrid(R, nGrid)
+nGrid = int((np.where(mask)[0][-1] - np.where(mask)[0][0]) * nrMult)
+Rgrid, RgridB = fn.makeGrid(R[mask], nGrid)
 ### making dL
-dL = fn.makeDL(Rgrid, R)
+dL = fn.makeDL(Rgrid, R[mask])
+
+### load the mask if using one
+try:
+    mask = HSV.loadMask(maskFile, flipBool, rEnd)
+except TypeError as e:
+    print('No maskFile, not using a mask')
+    mask = np.ones(data.shape[1]).astype(bool)
 
 
 ###############################################################################
@@ -152,13 +167,6 @@ scale = fn.makeScale(data)
 ###                      doing the main inversion here                      ###
 ###############################################################################
 
-
-### load the mask if using one
-try:
-    mask = HSV.loadMask(maskFile, flipBool, rEnd)
-except TypeError as e:
-    print('No maskFile, not using a mask')
-    mask = np.ones(data.shape[1]).astype(bool)
 
 ### make the regularisation band matrix
 D = fn.regulMatrix(nGrid, biasedEdges=biasedEdges)

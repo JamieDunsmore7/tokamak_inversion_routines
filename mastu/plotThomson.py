@@ -14,14 +14,15 @@ import os
 
 
 ### shot number
-shotn = 50499
+shotn = 51392
 ### time range
 # trange = [0.2,1.0]
 trange = [0.5,0.55]
 
 
 ### for the plots
-xlim = [1.25, 1.50]
+# xlim = [1.25, 1.50]
+xlim = [1.15, 1.50]
 yscale = 1.1
 ### where to save
 savePath = f'/home/sthoma/Documents/Plots/rba/{shotn}/thomsonProfiles/'
@@ -67,9 +68,11 @@ _, pe, peErr, _ = HSV.getThomson(shotn, 'p_e', trange=trange)
 
 ### iterate over the times
 for i in range(0, len(time)):
+    print(f'i={i}/{len(time)}')
     
     ### find the lowest x-value
-    rind = HSV.findNearest(Rraw, xlim[0]) - 1
+    # print(Rraw)
+    rind = HSV.findNearest(Rraw[i], xlim[0]) - 1
     ### make the profiles for the plots
     neProfile = HSV.mtanh(
         R, neR0[i], neHeight[i], neWidth[i], neGrad[i], neBkgd[i]
@@ -151,8 +154,8 @@ for i in range(0, len(time)):
     plt.tight_layout()
     plt.savefig(savePath + f't_{time[i]:.4f}s.png')
     
-    # plt.show()
-    plt.close()
+plt.show()
+    # plt.close()
 
 
 print('done :)')
