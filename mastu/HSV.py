@@ -198,7 +198,8 @@ def applyVignette(data, err, inputDict, shotn, dSlice, flipBool, rEnd):
     # vignFn /= vignFn.max()
     # vignFn -= vignArgs[-1]
     vignFn /= (vignArgs[-2] + vignArgs[-1])
-    vignFn = vignFn[dSlice][0]
+    # vignFn = vignFn[dSlice][0]
+    vignFn = vignFn[dSlice].mean(axis=0)
     
     if flipBool:
         vignFn = np.flip(vignFn)
@@ -357,7 +358,7 @@ def prepData(
         errLow = np.sqrt((data * calfErr)**2 + errLow**2)
     
     errLow = np.maximum(errLow, -data)
-    errLow[np.isclose(errLow, 0.)] = np.inf
+    # errLow[np.isclose(errLow, 0.)] = np.inf
     
     data *= calf
     

@@ -37,7 +37,7 @@ def makeFills(mask, R):
 ### function for plotting inversion with reconstruction and raw-data
 def plotInversion(
     R, data, err, RgridB, y, yErr, backprojection, time, Rmax, yMax, R0, R1, 
-    fwhm, fwhmErr, fills, xlim=[0.2,1.875], savePath=None, close=False
+    fwhm, fwhmErr, fills, xlim=[1.1,1.65], savePath=None, close=False
     ):
     for i in range(data.shape[0]):
         fig, ax = plt.subplots(1, 1, figsize=(3.5,3), dpi=150)
@@ -103,7 +103,7 @@ def plotResults(
     SizErr, SizMax, SizMaxR, SizR0, SizR1, SizFWHM, SizFWHMerr, n0, n0Err,
     n0Max, n0MaxR, n0R1, n0R2, n0R3, n0w1, n0w1err, n0w2, n0w2err, n0w3, 
     n0w3err, n0R1A, n0R2A, n0R3A, Rend, time, fills, figN0=None, neutralRatio=None, 
-    psiN=None, yMult=1.1, xlim=[1.25,1.50], n0lim=1e14, savePath=None, 
+    psiN=None, yMult=1.1, xlim=[1.25,1.575], n0lim=1e14, savePath=None, 
     close=False
     ):
     Rind = findNearest(R, xlim[1])
@@ -115,29 +115,32 @@ def plotResults(
         Rind1 = findNearest(R, Rend[i])
         fig, ax = plt.subplots(1, 3, figsize=(6,3), dpi=150)
         
-        ax[0].plot(R, emiss[i], '-', c='C0')
+        ax[0].plot(R, emiss[i]/1e19, '-', c='C0')
         ax[0].fill_between(
-            R, emiss[i]-emissErr[i], 
-            emiss[i]+emissErr[i], color='C0', alpha=0.3
+            R, emiss[i]/1e19-emissErr[i]/1e19, 
+            emiss[i]/1e19+emissErr[i]/1e19, color='C0', alpha=0.3
         )
         ax[0].plot(
-            [emR0[i], emR1[i]], [emMax[i]/2., emMax[i]/2.], '-k', lw=0.8
+            [emR0[i], emR1[i]], [emMax[i]/2./1e19, emMax[i]/2./1e19], 
+            '-k', lw=0.8
         )
         ax[0].text(
-            emMaxR[i]*0.99, emMax[i], 
+            emMaxR[i]*0.99, emMax[i]/1e19, 
             f'$R_\\mathrm{{max}}$\n{emMaxR[i]:.3f}m',
             ha='right', va='center', fontsize=8
         )
         ax[0].text(
-            (emR0[i]+emR1[i])/2., 0.98*emMax[i]/2., 
+            (emR0[i]+emR1[i])/2., 0.98*emMax[i]/2./1e19, 
             f'FWHM\n{emFWHM[i]*100:.2f}$\\pm$\n{emFWHMerr[i]*100:.2f}cm', 
             ha='center', va='top', fontsize=8
         )
         ax[0].set_title('Emissivity', fontsize=9)
         ax[0].set_xlabel('$R$ (m)')
-        ax[0].set_ylabel('$\\epsilon$ (m$^{-3}$ s$^{-1}$)')
+        ax[0].set_ylabel(
+            '$\\epsilon$ (10$^{19}$ ph sr$^{-1}$ m$^{-3}$ s$^{-1}$)'
+        )
         ax[0].yaxis.get_offset_text().set_size(9)
-        ax[0].set_ylim([0., (emiss[i]+emissErr[i]).max() * yMult])
+        ax[0].set_ylim([0., (emiss[i]+emissErr[i]).max()/1e19 * yMult])
         ylim = ax[0].get_ylim()
         for j in range(0, fills.shape[0]):
             ax[0].fill_between(
@@ -146,29 +149,31 @@ def plotResults(
             )
         ax[0].yaxis.set_minor_locator(AutoMinorLocator())
         
-        ax[1].plot(R, Siz[i], '-', c='C1')
+        ax[1].plot(R, Siz[i]/1e21, '-', c='C1')
         ax[1].fill_between(
-            R, Siz[i]-SizErr[i], Siz[i]+SizErr[i], color='C1', alpha=0.3
+            R, Siz[i]/1e21-SizErr[i]/1e21, 
+            Siz[i]/1e21+SizErr[i]/1e21, color='C1', alpha=0.3
         )
         ax[1].plot(
-            [SizR0[i], SizR1[i]], [SizMax[i]/2., SizMax[i]/2.], '-k', lw=0.8
+            [SizR0[i], SizR1[i]], [SizMax[i]/2./1e21, SizMax[i]/2./1e21], 
+            '-k', lw=0.8
         )
         ax[1].text(
-            SizMaxR[i]*0.99, SizMax[i], 
+            SizMaxR[i]*0.99, SizMax[i]/1e21, 
             f'$R_\\mathrm{{max}}$\n{SizMaxR[i]:.3f}m', 
             ha='right', va='center', fontsize=8
         )
         ax[1].text(
-            (SizR0[i]+SizR1[i])/2., 0.98*SizMax[i]/2., 
+            (SizR0[i]+SizR1[i])/2., 0.98*SizMax[i]/2./1e21, 
             f'FWHM\n{SizFWHM[i]*100:.2f}$\\pm$\n{SizFWHMerr[i]*100:.2f}cm', 
             ha='center', va='top', fontsize=8
         )
         
         ax[1].set_title('Ionisation rate', fontsize=9)
         ax[1].set_xlabel('$R$ (m)')
-        ax[1].set_ylabel('$S_\\mathrm{iz}$ (m$^{-3}$ s$^{-1}$)')
+        ax[1].set_ylabel('$S_\\mathrm{iz}$ (10$^{21}$ m$^{-3}$ s$^{-1}$)')
         ax[1].yaxis.get_offset_text().set_size(9)
-        ylim = [0., (Siz[i,:Rind1+1]+SizErr[i,:Rind1+1]).max() * yMult]
+        ylim = [0., (Siz[i,:Rind1+1]+SizErr[i,:Rind1+1]).max()/1e21 * yMult]
         ax[1].fill_between(
             [Rend[i],xlim[1]], [ylim[0],ylim[0]], 
             [ylim[1],ylim[1]], color='k', alpha=0.1
@@ -286,7 +291,7 @@ def plotResults(
                 ylim = ax[j].get_ylim()
                 ax[j].plot([sepR, sepR], ylim, '-k', lw=0.8, zorder=0)
         
-        fig.suptitle(f'i={i:.0f}, t={time[i]:.4f}s', fontsize=10)
+        fig.suptitle(f't={time[i]:.4f}s', fontsize=10)
         plt.tight_layout()
         if savePath:
             plt.savefig(savePath + f'{time[i]:.4f}s.png')
@@ -320,15 +325,23 @@ if __name__ == "__main__":
         show = False
         close = True
     try:
-        I = int(sys.argv[3])
+        t0 = float(sys.argv[3])
     except IndexError:
-        I = 0
+        t0 = None
     try:
-        J = int(sys.argv[4])
-        if J == 0:
-            J = None
+        t1 = float(sys.argv[4])
     except IndexError:
-        J = None
+        t1 = None
+    # try:
+    #     I = int(sys.argv[3])
+    # except IndexError:
+    #     I = 0
+    # try:
+    #     J = int(sys.argv[4])
+    #     if J == 0:
+    #         J = None
+    # except IndexError:
+    #     J = None
 
 
     ### make folders to save plots
@@ -364,6 +377,18 @@ if __name__ == "__main__":
         emR1 = results['emR1']
         emFWHM = results['emFWHM']
         emFWHMerr = results['emFWHMerr']
+
+        if t0 is None:
+            I = 0
+        else:
+            I = findNearest(time, t0)
+        if t1 is None:
+            if I == 0:
+                J = None
+            else:
+                J = I + 1
+        else:
+            J = findNearest(time, t1)
         
         fills = makeFills(mask, R)
         ### call the plotting function
@@ -422,6 +447,18 @@ if __name__ == "__main__":
         figN0 = results['figN0']
         psiN = results['psiN']
         neutralRatio = results['neutralRatio']
+
+        if t0 is None:
+            I = 0
+        else:
+            I = findNearest(time, t0)
+        if t1 is None:
+            if I == 0:
+                J = None
+            else:
+                J = I + 1
+        else:
+            J = findNearest(time, t1)
         
         ### call the plotting function
         fills = makeFills(mask, R)

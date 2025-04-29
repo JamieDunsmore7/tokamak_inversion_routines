@@ -2,7 +2,7 @@
 
 ### author: Steven Thomas
 ### email:  steven.thomas@ukaea.uk; sthoma@mit.edu
-invert_version = '2.1.0'
+invert_version = '2.2.0'
 
 
 import functions as fn
@@ -200,7 +200,7 @@ Rprofile = RgridB[Rind:]
 for i in range(nT):
     emissivity[i,indSpace], emissivityErr[i,indSpace], backprojection[i,mask], \
         chi2[i], gamma[i] = fn.inversion(
-            data[i][mask], err[i][mask], dL[mask,:], scale, nGrid, Q, D, 
+            data[i][mask], err[i][mask], dL, scale, nGrid, Q, D, 
             indLos, indSpace, nFisher=nFisher, regGuess=regGuess, regMin=regMin
     )
 

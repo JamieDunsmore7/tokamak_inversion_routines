@@ -1,0 +1,4 @@
+/home/sthoma/tokamak_inversion_routines/functions.py:118: RuntimeWarning: invalid value encountered in divide
+  T = dL / err[:,None] * scale
+/home/sthoma/tokamak_inversion_routines/functions.py:119: RuntimeWarning: invalid value encountered in divide
+  mean_d = data / err

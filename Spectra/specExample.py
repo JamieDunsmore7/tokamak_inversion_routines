@@ -66,11 +66,11 @@ def findNearest(arr, val):
 
 ### load the transmission curve of the two filters as provided by andover.
 ### if you're not on freia and don't have access to these files, let me know
-filter = np.load('/home/sthoma/tokamak_inversion_routines/mastu/filterHSV.npz')
-filter_15A = np.load('/home/sthoma/tokamak_inversion_routines/mastu/filterHSV_1.5A.npz')
-filter_15B = np.load('/home/sthoma/tokamak_inversion_routines/mastu/filterHSV_1.5B.npz')
-filter_andover = np.load('/home/sthoma/tokamak_inversion_routines/mastu/filterHSV_andover.npz')
-filter_andover_CCFE = np.load('/home/sthoma/tokamak_inversion_routines/mastu/filterHSV_andoverCCFE_adjusted.npz')
+filter = np.load('/home/sthoma/tokamak_inversion_routines/mastu/FiltersSpectra/filterHSV.npz')
+filter_15A = np.load('/home/sthoma/tokamak_inversion_routines/mastu/FiltersSpectra/filterHSV_1.5A.npz')
+filter_15B = np.load('/home/sthoma/tokamak_inversion_routines/mastu/FiltersSpectra/filterHSV_1.5B.npz')
+filter_andover = np.load('/home/sthoma/tokamak_inversion_routines/mastu/FiltersSpectra/filterHSV_andover.npz')
+filter_andover_CCFE = np.load('/home/sthoma/tokamak_inversion_routines/mastu/FiltersSpectra/filterHSV_andoverCCFE_adjusted.npz')
 
 
 ### example shot number

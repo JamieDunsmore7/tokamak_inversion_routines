@@ -2,12 +2,13 @@
 
 ### author: Steven Thomas
 ### email:  steven.thomas@ukaea.uk; sthoma@mit.edu
-neutral_version = '2.1.0'
+neutral_version = '2.2.0'
 
 
 import functions as fn
 from mastu import HSV
 import numpy as np
+from scipy.optimize import curve_fit
 import sys
 
 
@@ -109,7 +110,7 @@ Rprofile = inversion['Rprofile']
 
 
 ### using raw Thomson or Pedestal fitting
-if kindThomson == 'fit':
+if (kindThomson == 'fit') or (kindThomson == 'apf'):
     ### load the pedestal fitting parameters
     timeProfile, R0Density, heightDensity, widthDensity, \
         gradDensity, bkgdDensity = HSV.getPedestal(shotn, 'n_e')
@@ -117,8 +118,10 @@ if kindThomson == 'fit':
         gradTemp, bkgdTemp = HSV.getPedestal(shotn, 'T_e')
 
 ### always load the Thomson data
-timeThomson, dataDensity, _, Rthomson = HSV.getThomson(shotn, 'n_e')
-_, dataTemp, _, _ = HSV.getThomson(shotn, 'T_e')
+timeThomson, dataDensity, dataDensityErr, Rthomson = HSV.getThomson(
+    shotn, 'n_e'
+)
+_, dataTemp, dataTempErr, _ = HSV.getThomson(shotn, 'T_e')
 
 ### make ADAS data functions
 ### TODO: Extrapolation arguments are hardcoded
@@ -127,6 +130,18 @@ fExcite, scaleExcite, fRecomb, scaleRecomb, fIonise, scaleIonise = fn.makeADAS(
     ionise=kindIonise, bounds_error=False, fill_value=None
 )
 
+### defining some parameters for fitting the ne and Te profiles
+R0 = 1.25
+neBounds = (
+    [0.25, 0.01, 0., -1e4, 0.], 
+    [1.7, 100., 0.2, 1e4, 10.]
+)
+TeBounds = (
+    [0.25, 1., 0., -1e4, 0.], 
+    [1.7, 500., 0.2, 1e4, 100.]
+)
+neScale = 1e19
+TeScale = 1.
 
 ###############################################################################
 ###                         iterate for Siz and n0                          ###
@@ -179,6 +194,7 @@ neutralRatio = np.zeros(nT)
 
 ### iterate over the times
 for i in range(nT):
+    print(f'{i}/{nT}, t={time[i]:.6f}s')
     
     ### make profiles for this timestep
     T = fn.findNearest(timeThomson, time[i])
@@ -195,7 +211,7 @@ for i in range(nT):
     
 
     ### handle the pedestalFit or raw data differently
-    if kindThomson == 'fit':
+    if kindThomson == 'apf':
 
         TT = fn.findNearest(timeProfile, time[i])
         ### using pedestal fitting results
@@ -207,6 +223,36 @@ for i in range(nT):
             Rprofile, R0Density[TT], heightDensity[TT],
             widthDensity[TT], gradDensity[TT], bkgdDensity[TT]
         )
+
+    elif kindThomson == 'fit':
+        ### fit to the Thomson data myself
+        boo = booThomson * (xTh > R0)
+        ### find time in the thomson data
+        TT = fn.findNearest(timeProfile, time[i])
+
+        ### temperature
+        Tep0 = (
+            R0Temp[TT], heightTemp[TT]/TeScale, widthTemp[TT], 
+            gradTemp[TT]/TeScale, bkgdTemp[TT]/TeScale
+        )
+        TePopt, TePcov = curve_fit(
+            HSV.mtanh, xTh[boo], dataTemp[T,rTh:][boo]/TeScale, 
+            p0=Tep0, sigma=dataTempErr[T,rTh:][boo]/TeScale, 
+            absolute_sigma=True, bounds=TeBounds
+        )
+        profileTemp[i] = HSV.mtanh(Rprofile, *TePopt) * TeScale
+
+        ### density
+        nep0 = (
+            R0Density[TT], heightDensity[TT]/neScale, widthDensity[TT], 
+            gradDensity[TT]/neScale, bkgdDensity[TT]/neScale
+        )
+        nePopt, nePcov = curve_fit(
+            HSV.mtanh, xTh[boo], dataDensity[T,rTh:][boo]/neScale, 
+            p0=nep0, sigma=dataDensityErr[T,rTh:][boo]/neScale, 
+            absolute_sigma=True, bounds=neBounds
+        )
+        profileDensity[i] = HSV.mtanh(Rprofile, *nePopt) * neScale
 
     elif kindThomson == 'raw':
         ### using the raw Thomson data
@@ -229,6 +275,7 @@ for i in range(nT):
             Rprofile, xTh[booThomson], yTh, left=left, right=right
             )
         ### TODO: hardcoded extrapolation method
+
 
     ### throw it into the iteration function
     ioniseRate[i], ioniseErr[i], neutralDensity[i], neutralErr[i] = \
