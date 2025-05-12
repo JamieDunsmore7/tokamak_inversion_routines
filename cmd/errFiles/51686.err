@@ -1,0 +1,8 @@
+/home/sthoma/tokamak_inversion_routines/mastu/HSV.py:493: RuntimeWarning: overflow encountered in exp
+  L = 1. / (1. + np.exp(-z))
+Traceback (most recent call last):
+  File "/home/sthoma/tokamak_inversion_routines/./neutrals.py", line 238, in <module>
+    ### temperature
+  File "/home/sthoma/.local/lib/python3.9/site-packages/scipy/optimize/_minpack_py.py", line 992, in curve_fit
+    raise RuntimeError("Optimal parameters not found: " + res.message)
+RuntimeError: Optimal parameters not found: The maximum number of function evaluations is exceeded.

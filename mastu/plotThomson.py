@@ -17,11 +17,9 @@ from scipy.optimize import curve_fit
 
 
 ### shot number
-shotn = 51347
+shotn = 51713
 ### time range
-trange = [0.18,0.655]
-# trange = [0.26,0.261]
-# trange = [0.346,0.347]
+trange = [0.18,0.72]
 ### do I want to show the plots or not
 plot = False
 
@@ -83,8 +81,8 @@ TeBounds = (
     [1.7, 500., 0.2, 1e4, 100.]
 )
 peBounds = (
-    [0.25, 1., 0., -1e4, 0.], 
-    [1.7, 500., 0.2, 1e4, 100.]
+    [0.25, 1., 0., -1e5, 0.], 
+    [1.7, 5000., 0.2, 1e5, 100.]
 )
 neScale = 1e19
 
@@ -147,6 +145,8 @@ for i in range(0, len(time)):
         neBool = True
     except RuntimeError:
         neBool = False
+    except ValueError:
+        neBool = False
 
     ### fit Te
     Tep0 = (TeR0[i], TeHeight[i], TeWidth[i], TeGrad[i], TeBkgd[i])
@@ -159,6 +159,8 @@ for i in range(0, len(time)):
         TeBool = True
     except RuntimeError:
         TeBool = False
+    except ValueError:
+        TeBool = False
 
     ### fit pe
     pep0 = (peR0[i], peHeight[i], peWidth[i], peGrad[i], peBkgd[i])
@@ -170,6 +172,8 @@ for i in range(0, len(time)):
         peFit = HSV.mtanh(R, *pePopt)
         peBool = True
     except RuntimeError:
+        peBool = False
+    except ValueError:
         peBool = False
     
     

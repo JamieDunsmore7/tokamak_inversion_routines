@@ -5,6 +5,7 @@
 neutral_version = '2.2.0'
 
 
+from cpyuda import ServerException as SE
 import functions as fn
 from mastu import HSV
 import numpy as np
@@ -109,13 +110,31 @@ Rprofile = inversion['Rprofile']
 ###############################################################################
 
 
-### using raw Thomson or Pedestal fitting
-if (kindThomson == 'fit') or (kindThomson == 'apf'):
-    ### load the pedestal fitting parameters
-    timeProfile, R0Density, heightDensity, widthDensity, \
-        gradDensity, bkgdDensity = HSV.getPedestal(shotn, 'n_e')
-    _, R0Temp, heightTemp, widthTemp, \
-        gradTemp, bkgdTemp = HSV.getPedestal(shotn, 'T_e')
+# ### using raw Thomson or Pedestal fitting
+# if (kindThomson == 'fit') or (kindThomson == 'apf'):
+#     try:
+#         ### load the pedestal fitting parameters
+#         timeProfile, R0Density, heightDensity, widthDensity, \
+#             gradDensity, bkgdDensity = HSV.getPedestal(shotn, 'n_e')
+#         _, R0Temp, heightTemp, widthTemp, \
+#             gradTemp, bkgdTemp = HSV.getPedestal(shotn, 'T_e')
+#     except SE:
+#         print('ServerException, no APF fit')
+#         kindThomson = 'fit'
+
+if kindThomson == 'apf':
+    try:
+        ### load the pedestal fitting parameters
+        timeProfile, R0Density, heightDensity, widthDensity, \
+            gradDensity, bkgdDensity = HSV.getPedestal(shotn, 'n_e')
+        _, R0Temp, heightTemp, widthTemp, \
+            gradTemp, bkgdTemp = HSV.getPedestal(shotn, 'T_e')
+    except SE:
+        print('ServerException, no APF fit')
+        kindThomson = 'fit'
+if kindThomson == 'fit':
+    nep0 = (1.37, 1., 0.1, 1e4, 1.)
+    Tep0 = (1.37, 100., 0.1, 1e4, 10.)
 
 ### always load the Thomson data
 timeThomson, dataDensity, dataDensityErr, Rthomson = HSV.getThomson(
@@ -133,15 +152,17 @@ fExcite, scaleExcite, fRecomb, scaleRecomb, fIonise, scaleIonise = fn.makeADAS(
 ### defining some parameters for fitting the ne and Te profiles
 R0 = 1.25
 neBounds = (
-    [0.25, 0.01, 0., -1e4, 0.], 
-    [1.7, 100., 0.2, 1e4, 10.]
+    [0.25, 0.01, 0., -1e5, 0.], 
+    [1.7, 100., 0.2, 1e5, 10.]
 )
 TeBounds = (
-    [0.25, 1., 0., -1e4, 0.], 
-    [1.7, 500., 0.2, 1e4, 100.]
+    [0.25, 1., 0., -1e5, 0.], 
+    [1.7, 500., 0.2, 1e5, 100.]
 )
 neScale = 1e19
 TeScale = 1.
+nep0 = (1.37, 1., 0.1, 1e4, 1.)
+Tep0 = (1.37, 100., 0.1, 1e4, 10.)
 
 ###############################################################################
 ###                         iterate for Siz and n0                          ###
@@ -228,13 +249,13 @@ for i in range(nT):
         ### fit to the Thomson data myself
         boo = booThomson * (xTh > R0)
         ### find time in the thomson data
-        TT = fn.findNearest(timeProfile, time[i])
+        TT = fn.findNearest(timeThomson, time[i])
 
         ### temperature
-        Tep0 = (
-            R0Temp[TT], heightTemp[TT]/TeScale, widthTemp[TT], 
-            gradTemp[TT]/TeScale, bkgdTemp[TT]/TeScale
-        )
+        # Tep0 = (
+        #     R0Temp[TT], heightTemp[TT]/TeScale, widthTemp[TT], 
+        #     gradTemp[TT]/TeScale, bkgdTemp[TT]/TeScale
+        # )
         TePopt, TePcov = curve_fit(
             HSV.mtanh, xTh[boo], dataTemp[T,rTh:][boo]/TeScale, 
             p0=Tep0, sigma=dataTempErr[T,rTh:][boo]/TeScale, 
@@ -243,10 +264,10 @@ for i in range(nT):
         profileTemp[i] = HSV.mtanh(Rprofile, *TePopt) * TeScale
 
         ### density
-        nep0 = (
-            R0Density[TT], heightDensity[TT]/neScale, widthDensity[TT], 
-            gradDensity[TT]/neScale, bkgdDensity[TT]/neScale
-        )
+        # nep0 = (
+        #     R0Density[TT], heightDensity[TT]/neScale, widthDensity[TT], 
+        #     gradDensity[TT]/neScale, bkgdDensity[TT]/neScale
+        # )
         nePopt, nePcov = curve_fit(
             HSV.mtanh, xTh[boo], dataDensity[T,rTh:][boo]/neScale, 
             p0=nep0, sigma=dataDensityErr[T,rTh:][boo]/neScale, 

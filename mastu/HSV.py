@@ -232,6 +232,21 @@ def makeTimeRange(shotn, T0, T1):
     return timeRange
 
 
+def makeTRange(shotn, time0, time1):
+
+    time = client.get_images('rba', shotn, frame_number=0).frame_times
+    
+    T0 = findNearest(time, time0)
+    if T0 == 0:
+        print(f'WARNING: index found is first element.')
+
+    T1 = findNearest(time, time1)
+    if T1 == (len(time)-1):
+        print(f'WARNING: index found is last element.')
+
+    return T0, T1
+
+
 # def makeBackground(shotn, tend, dSlice, goodChans, flipBool, rEnd):
     
 #     backgroundBool = True
