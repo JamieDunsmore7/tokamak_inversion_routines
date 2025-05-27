@@ -18,14 +18,20 @@ from scipy.optimize import curve_fit
 
 ### shot number
 shots = [
-    51705,
-    51711,
+    51713,
+    51765,
 ]
 ### time range
 times = [
-    [0.59,0.71], 
-    [0.59,0.71],
+    [0.35,0.47], 
+    [0.35,0.47],
+    # [0.40,0.50],
 ]
+colors = [
+    'C7', 'C2',
+]
+fitType = 'apf'
+# fitType = 'fit'
 
 
 ### do I want to show the plots or not
@@ -100,19 +106,34 @@ fig, ax = plt.subplots(1, 3, figsize=(10,3.6), dpi=150)
 for i in range(0, len(times)):
     shotn = shots[i]
     trange = times[i]
-    # color = f'C{i}'
-    if i == 0:
-        color = 'C1'
-    if i == 1:
-        color = 'C5'
+    color = colors[i]
 
     marker = '.'
 
+    ### pedestal fitting results
+    time, neR0, neHeight, neWidth, neGrad, neBkgd = HSV.getPedestal(
+        shotn, 'n_e', trange=trange
+    )
+    _, TeR0, TeHeight, TeWidth, TeGrad, TeBkgd = HSV.getPedestal(
+        shotn, 'T_e', trange=trange
+    )
+    _, peR0, peHeight, peWidth, peGrad, peBkgd = HSV.getPedestal(
+        shotn, 'p_e', trange=trange
+    )
+
     time2, ne, neErr, Rraw = HSV.getThomson(shotn, 'n_e', trange=trange)
+    ### check if the time range is fine between the two
+    if (len(time) != len(time2)) or (
+        not (np.isclose(time, time2).all() and np.isclose(time2, time).all())
+        ):
+        ### change trange if need be, and reload density
+        trange = [time[0],time[-1]]
+        _,  ne, neErr, Rraw = HSV.getThomson(shotn, 'n_e', trange=trange)
     _, Te, TeErr, _ = HSV.getThomson(shotn, 'T_e', trange=trange)
     _, pe, peErr, _ = HSV.getThomson(shotn, 'p_e', trange=trange)
 
-    for j in range(0, len(time2)):
+    # for j in range(0, len(time2)):
+    for j in range(0, len(time)):
 
     
         ### find the lowest x-value
@@ -121,35 +142,55 @@ for i in range(0, len(times)):
         ### find finite values and those above R=1.25m (by default)
         boo = np.isfinite(ne[j]) * np.isfinite(Te[j]) * (Rraw[j] > R0)
 
-        try:
-            nePopt, nePcov = curve_fit(
-                HSV.mtanh, Rraw[j,boo], ne[j,boo]/neScale, p0=nep0, 
-                sigma=neErr[j,boo]/neScale, absolute_sigma=True, bounds=neBounds
-            )
-            neFit = HSV.mtanh(R, *nePopt) * neScale
+
+        if fitType == 'fit':
+            
+            try:
+                nePopt, nePcov = curve_fit(
+                    HSV.mtanh, Rraw[j,boo], ne[j,boo]/neScale, p0=nep0, 
+                    sigma=neErr[j,boo]/neScale, absolute_sigma=True, bounds=neBounds
+                )
+                neFit = HSV.mtanh(R, *nePopt) * neScale
+                neBool = True
+            except RuntimeError:
+                neBool = False
+
+            try:
+                TePopt, TePcov = curve_fit(
+                    HSV.mtanh, Rraw[j,boo], Te[j,boo], p0=Tep0, 
+                    sigma=TeErr[j,boo], absolute_sigma=True, bounds=TeBounds
+                )
+                TeFit = HSV.mtanh(R, *TePopt)
+                TeBool = True
+            except RuntimeError:
+                TeBool = False
+
+            try:
+                pePopt, pePcov = curve_fit(
+                    HSV.mtanh, Rraw[j,boo], pe[j,boo], p0=pep0, 
+                    sigma=peErr[j,boo], absolute_sigma=True, bounds=peBounds
+                )
+                peFit = HSV.mtanh(R, *pePopt)
+                peBool = True
+            except RuntimeError:
+                peBool = False
+
+
+        elif fitType == 'apf':
+
             neBool = True
-        except RuntimeError:
-            neBool = False
-
-        try:
-            TePopt, TePcov = curve_fit(
-                HSV.mtanh, Rraw[j,boo], Te[j,boo], p0=Tep0, 
-                sigma=TeErr[j,boo], absolute_sigma=True, bounds=TeBounds
-            )
-            TeFit = HSV.mtanh(R, *TePopt)
             TeBool = True
-        except RuntimeError:
-            TeBool = False
-
-        try:
-            pePopt, pePcov = curve_fit(
-                HSV.mtanh, Rraw[j,boo], pe[j,boo], p0=pep0, 
-                sigma=peErr[j,boo], absolute_sigma=True, bounds=peBounds
-            )
-            peFit = HSV.mtanh(R, *pePopt)
             peBool = True
-        except RuntimeError:
-            peBool = False
+            neFit = HSV.mtanh(
+                R, neR0[j], neHeight[j], neWidth[j], neGrad[j], neBkgd[j]
+            )
+            TeFit = HSV.mtanh(
+                R, TeR0[j], TeHeight[j], TeWidth[j], TeGrad[j], TeBkgd[j]
+            )
+            peFit = HSV.mtanh(
+                R, peR0[j], peHeight[j], peWidth[j], peGrad[j], peBkgd[j]
+            )
+
         
         
         ### find the maximas for the plotting

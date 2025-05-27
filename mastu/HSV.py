@@ -74,11 +74,16 @@ def getExposure(shotn, mult=1e-6):
     return data.exposure * mult
 
 
-def getRz(Rzfile, I0, I1, J0, J1):
+def getRz(Rzfile, I0, I1, J0, J1, kind=0):
     
     data = np.load(Rzfile)
-    R = data['Rmin'][I0:I1,J0:J1].mean(axis=0)
-    z = data['zmin'][I0:I1,J0:J1].mean(axis=0)
+    if kind == 0:
+        R = data['Rmin0'][I0:I1,J0:J1].mean(axis=0)
+        z = data['zmin0'][I0:I1,J0:J1].mean(axis=0)
+        
+    else:
+        R = data['Rmin'][I0:I1,J0:J1].mean(axis=0)
+        z = data['zmin'][I0:I1,J0:J1].mean(axis=0)
     
     return R, z
 
@@ -93,7 +98,7 @@ def getVectors(calibFile):
     return los, pupil
 
 
-def makeImage(shotn, tind, savePath='/home/sthoma/calcam/images/'):
+def makeImage(shotn, tind, savePath='/home/sthoma/calcam/Work/Inputs/Images/'):
     frame, _ = getSingle(shotn, tind)
     
     file = 'image_{}_{}.png'.format(shotn, tind)
