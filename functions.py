@@ -3,7 +3,7 @@
 import json
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy.interpolate import RegularGridInterpolator
+from scipy.interpolate import RegularGridInterpolator, interp1d
 from scipy.linalg import eigh, solve_banded
 
 
@@ -52,6 +52,45 @@ def calcSiz(
     EXC = fExcite((temperature, density)) * scaleExcite
     ionisation = 4. * np.pi * emissivity * SCD / EXC
     return ionisation
+
+
+def calcIoniseError(
+    ionise, emissivity, emissivityErr, EXC, EXCErr, SCD, SCDErr
+    ):
+    
+    ioniseErr = np.sqrt(
+        ionise**2 * (
+            (emissivityErr / emissivity)**2 + 
+            (EXCErr / EXC)**2 + (SCDErr / SCD)**2
+        )
+    )
+    
+    return ioniseErr
+
+
+def calcNeutralError(
+    emissivity, emissivityErr, density, 
+    densityErr, EXC, EXCErr, REC, RECErr, ni=1.
+    ):
+    
+    dn0_dE = (4. * np.pi) / (EXC * density)
+
+    dn0_dREC = -(density * ni) / EXC
+
+    dn0_dEXC = (
+        (REC * density**2 * ni) - (4. * np.pi * emissivity)
+    ) / (EXC**2 * density)
+
+    dn0_dne = -(
+        (4. * np.pi * emissivity) / (EXC * density**2)
+    ) -((REC * ni) / EXC)
+    
+    neutralErr = np.sqrt(
+        (dn0_dE * emissivityErr)**2 + (dn0_dREC * RECErr)**2 + 
+        (dn0_dEXC * EXCErr)**2 + (dn0_dne * densityErr)**2
+    )
+    
+    return neutralErr
 
 
 def FindMin(F, x0, dx0, prod, S, U, tol=0.01):
@@ -207,7 +246,7 @@ def loadADAS(line='dalpha'):
     if line == 'dalpha':
         excite = np.load(dir + 'EXCIT_pec12#h_pju#h0.npz')
         recomb = np.load(dir + 'RECOM_pec12#h_pju#h0.npz')
-        ionise = np.load(dir + 'IONIS_scd12h.npz')
+        ionise = np.load(dir + 'IONIS_scd12h_ver2.npz')
         Te = excite['Te'] # eV
         ne = excite['ne'] # m^-3
         dataExcite = excite['data'] # ph m^3 s^-1
@@ -311,7 +350,7 @@ def makeScale(data):
     return scale
 
 
-def neutrals(
+def neutralsOriginal(
     emissivity, emissivityErr, temperature, density, fExcite, 
     scaleExcite, fRecomb, scaleRecomb, fIonise, scaleIonise, percent=0.1):
     ### one iteration of the neutrals calculations
@@ -332,7 +371,107 @@ def neutrals(
         density, fExcite, scaleExcite, fRecomb, scaleRecomb, percent=percent
     )
     return ioniseRate, ioniseError, neutralDensity, neutralErr
+
+
+def neutrals(
+    emissivity, emissivityErr, temperature, density, temperatures, densities, 
+    fExcite, scaleExcite, fRecomb, scaleRecomb, fIonise, scaleIonise, ni=1.
+    ):
+
+    ### make the rate coefficients
+    EXC = fExcite((temperature, density)) * scaleExcite
+    REC = fRecomb((temperature, density)) * scaleRecomb
+    SCD = fIonise((temperature, density)) * scaleIonise
+
+    ### calculate ionisation rate and neutral density
+    ioniseRate = (4. * np.pi * emissivity) * (SCD / EXC)
+    neutralDensity = (
+        (4. * np.pi * emissivity) - (REC * ni * density**2)
+    ) / (EXC * density)
+
+    ### empty arrays for coefficient rates
+    EXCs = np.zeros((temperatures.shape[0], len(emissivity)))
+    RECs = np.zeros((temperatures.shape[0], len(emissivity)))
+    SCDs = np.zeros((temperatures.shape[0], len(emissivity)))
+    ### iterate over number of samples
+    for i in range(0, temperatures.shape[0]):
+        EXCs[i] = fExcite((temperatures[i], densities[i])) * scaleExcite
+        RECs[i] = fRecomb((temperatures[i], densities[i])) * scaleRecomb
+        SCDs[i] = fIonise((temperatures[i], densities[i])) * scaleIonise
+
+    ### standard deviation is the error
+    EXCErr = np.std(EXCs, axis=0)
+    RECErr = np.std(RECs, axis=0)
+    SCDErr = np.std(SCDs, axis=0)
+    densityErr = np.std(densities, axis=0)
+
+    ### calculate the errors
+    ioniseErr = calcIoniseError(
+        ioniseRate, emissivity, emissivityErr, 
+        EXC, EXCErr, SCD, SCDErr
+    )
+    neutralErr = calcNeutralError(
+        emissivity, emissivityErr, density, 
+        densityErr, EXC, EXCErr, REC, RECErr, ni=ni
+    )
+
+    return ioniseRate, ioniseErr, neutralDensity, neutralErr
+
+
+def neutrals0(
+    Rprofile, emissivity, emissivityErr, Rthomson, temperature, density, 
+    temperatureErr, densityErr, fExcite, scaleExcite, fRecomb, scaleRecomb, 
+    fIonise, scaleIonise, kind='quadratic', ni=1., N=100
+    ):
     
+    ### interpolate the emissivity
+    emissivityInt = interp1d(
+        Rprofile, emissivity, kind=kind
+    )(Rthomson)
+    emissivityErrInt = interp1d(
+        Rprofile, emissivityErr, kind=kind
+    )(Rthomson)
+
+    ### make the rate coefficients
+    EXC = fExcite((temperature, density)) * scaleExcite
+    REC = fRecomb((temperature, density)) * scaleRecomb
+    SCD = fIonise((temperature, density)) * scaleIonise
+
+    ### calculate ionisation rate and neutral density
+    ioniseRate = (4. * np.pi * emissivityInt) * (SCD / EXC)
+    neutralDensity = (
+        (4. * np.pi * emissivityInt) - (REC * ni * density**2)
+    ) / (EXC * density)
+
+    ### empty arrays for coefficient rates
+    EXCs = np.zeros((N, len(temperature)))
+    RECs = np.zeros((N, len(temperature)))
+    SCDs = np.zeros((N, len(temperature)))
+    ### iterate over number of smaples
+    for i in range(0, N):
+        temp = np.random.normal(loc=temperature, scale=temperatureErr)
+        dens = np.random.normal(loc=density, scale=densityErr)
+        EXCs[i] = fExcite((temp, dens)) * scaleExcite
+        RECs[i] = fRecomb((temp, dens)) * scaleRecomb
+        SCDs[i] = fIonise((temp, dens)) * scaleIonise
+    
+    ### standard deviation is the error
+    EXCErr = np.std(EXCs, axis=0)
+    RECErr = np.std(RECs, axis=0)
+    SCDErr = np.std(SCDs, axis=0)
+
+    ### make the error for ionisation rate and neutral density
+    ioniseErr = calcIoniseError(
+        ioniseRate, emissivityInt, 
+        emissivityErrInt, EXC, EXCErr, SCD, SCDErr
+    )
+    neutralErr = calcNeutralError(
+        emissivityInt, emissivityErrInt, density, 
+        densityErr, EXC, EXCErr, REC, RECErr, ni=ni
+    )
+
+    return ioniseRate, ioniseErr, neutralDensity, neutralErr
+
 
 def prepR(R0, rEnd):
     goodChans = np.ones(len(R0)).astype(bool)

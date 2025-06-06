@@ -18,17 +18,18 @@ from scipy.optimize import curve_fit
 
 ### shot number
 shots = [
-    51713,
-    51765,
+    51706,
+    51706,
+    51706,
 ]
 ### time range
 times = [
-    [0.35,0.47], 
-    [0.35,0.47],
-    # [0.40,0.50],
+    [0.414,0.415], 
+    [0.419,0.420],
+    [0.423,0.424],
 ]
 colors = [
-    'C7', 'C2',
+    'C0', 'C1', 'C2',
 ]
 fitType = 'apf'
 # fitType = 'fit'

@@ -102,11 +102,13 @@ def plotResults(
     R, emiss, emissErr, emMaxR, emMax, emR0, emR1, emFWHM, emFWHMerr, Siz,
     SizErr, SizMax, SizMaxR, SizR0, SizR1, SizFWHM, SizFWHMerr, n0, n0Err,
     n0Max, n0MaxR, n0R1, n0R2, n0R3, n0w1, n0w1err, n0w2, n0w2err, n0w3, 
-    n0w3err, n0R1A, n0R2A, n0R3A, Rend, time, fills, figN0=None, neutralRatio=None, 
-    psiN=None, yMult=1.1, xlim=[1.25,1.575], n0lim=1e14, savePath=None, 
-    close=False
+    n0w3err, n0R1A, n0R2A, n0R3A, Rend, time, fills, tindThomson, booThomson, 
+    Rthomson, ioniseRate0, ionise0Err, neutralDensity0, neutral0Err, n0sep,
+    figN0=None, neutralRatio=None, psiN=None, yMult=1.1, xlim=[1.25,1.575], 
+    n0lim=1e14, savePath=None, close=False
     ):
     Rind = findNearest(R, xlim[1])
+    xlim = [xlim[0],R.max()]
     if psiN is None:
         top = True
     else:
@@ -119,21 +121,21 @@ def plotResults(
         ax[0].fill_between(
             R, emiss[i]/1e19-emissErr[i]/1e19, 
             emiss[i]/1e19+emissErr[i]/1e19, color='C0', alpha=0.3
-        )
-        ax[0].plot(
-            [emR0[i], emR1[i]], [emMax[i]/2./1e19, emMax[i]/2./1e19], 
-            '-k', lw=0.8
-        )
-        ax[0].text(
-            emMaxR[i]*0.99, emMax[i]/1e19, 
-            f'$R_\\mathrm{{max}}$\n{emMaxR[i]:.3f}m',
-            ha='right', va='center', fontsize=8
-        )
-        ax[0].text(
-            (emR0[i]+emR1[i])/2., 0.98*emMax[i]/2./1e19, 
-            f'FWHM\n{emFWHM[i]*100:.2f}$\\pm$\n{emFWHMerr[i]*100:.2f}cm', 
-            ha='center', va='top', fontsize=8
-        )
+        )        
+        # ax[0].plot(
+        #     [emR0[i], emR1[i]], [emMax[i]/2./1e19, emMax[i]/2./1e19], 
+        #     '-k', lw=0.8
+        # )
+        # ax[0].text(
+        #     emMaxR[i]*0.99, emMax[i]/1e19, 
+        #     f'$R_\\mathrm{{max}}$\n{emMaxR[i]:.3f}m',
+        #     ha='right', va='center', fontsize=8
+        # )
+        # ax[0].text(
+        #     (emR0[i]+emR1[i])/2., 0.98*emMax[i]/2./1e19, 
+        #     f'FWHM\n{emFWHM[i]*100:.2f}$\\pm$\n{emFWHMerr[i]*100:.2f}cm', 
+        #     ha='center', va='top', fontsize=8
+        # )
         ax[0].set_title('Emissivity', fontsize=9)
         ax[0].set_xlabel('$R$ (m)')
         ax[0].set_ylabel(
@@ -148,32 +150,46 @@ def plotResults(
                 [ylim[1],ylim[1]], color='C3', alpha=0.1
             )
         ax[0].yaxis.set_minor_locator(AutoMinorLocator())
+        ax[0].plot(xlim, [emMax[i]/1e19,emMax[i]/1e19], '--', c='k', lw=0.8, zorder=1)
+        ax[0].plot([emMaxR[i],emMaxR[i]], ylim, '--', c='k', lw=0.8, zorder=1)
+        ax[0].fill_between(
+            [Rend[i],xlim[1]], [ylim[0],ylim[0]], 
+            [ylim[1],ylim[1]], color='k', alpha=0.1
+            )
         
         ax[1].plot(R, Siz[i]/1e21, '-', c='C1')
         ax[1].fill_between(
             R, Siz[i]/1e21-SizErr[i]/1e21, 
             Siz[i]/1e21+SizErr[i]/1e21, color='C1', alpha=0.3
         )
-        ax[1].plot(
-            [SizR0[i], SizR1[i]], [SizMax[i]/2./1e21, SizMax[i]/2./1e21], 
-            '-k', lw=0.8
+        ax[1].errorbar(
+            Rthomson[tindThomson[i],booThomson[i]], 
+            ioniseRate0[i,booThomson[i]]/1e21, 
+            yerr=ionise0Err[i,booThomson[i]]/1e21, 
+            fmt='.', c='k', mfc='None', elinewidth=0.8, alpha=0.8, 
         )
-        ax[1].text(
-            SizMaxR[i]*0.99, SizMax[i]/1e21, 
-            f'$R_\\mathrm{{max}}$\n{SizMaxR[i]:.3f}m', 
-            ha='right', va='center', fontsize=8
-        )
-        ax[1].text(
-            (SizR0[i]+SizR1[i])/2., 0.98*SizMax[i]/2./1e21, 
-            f'FWHM\n{SizFWHM[i]*100:.2f}$\\pm$\n{SizFWHMerr[i]*100:.2f}cm', 
-            ha='center', va='top', fontsize=8
-        )
+        # ax[1].plot(
+        #     [SizR0[i], SizR1[i]], [SizMax[i]/2./1e21, SizMax[i]/2./1e21], 
+        #     '-k', lw=0.8
+        # )
+        # ax[1].text(
+        #     SizMaxR[i]*0.99, SizMax[i]/1e21, 
+        #     f'$R_\\mathrm{{max}}$\n{SizMaxR[i]:.3f}m', 
+        #     ha='right', va='center', fontsize=8
+        # )
+        # ax[1].text(
+        #     (SizR0[i]+SizR1[i])/2., 0.98*SizMax[i]/2./1e21, 
+        #     f'FWHM\n{SizFWHM[i]*100:.2f}$\\pm$\n{SizFWHMerr[i]*100:.2f}cm', 
+        #     ha='center', va='top', fontsize=8
+        # )
         
         ax[1].set_title('Ionisation rate', fontsize=9)
         ax[1].set_xlabel('$R$ (m)')
         ax[1].set_ylabel('$S_\\mathrm{iz}$ (10$^{21}$ m$^{-3}$ s$^{-1}$)')
         ax[1].yaxis.get_offset_text().set_size(9)
         ylim = [0., (Siz[i,:Rind1+1]+SizErr[i,:Rind1+1]).max()/1e21 * yMult]
+        ax[1].plot(xlim, [SizMax[i]/1e21,SizMax[i]/1e21], '--', c='k', lw=0.8, zorder=1)
+        ax[1].plot([SizMaxR[i],SizMaxR[i]], ylim, '--', c='k', lw=0.8, zorder=1)
         ax[1].fill_between(
             [Rend[i],xlim[1]], [ylim[0],ylim[0]], 
             [ylim[1],ylim[1]], color='k', alpha=0.1
@@ -190,50 +206,63 @@ def plotResults(
         ax[2].fill_between(
             R, n0[i]-n0Err[i], n0[i]+n0Err[i], color='C2', alpha=0.3
         )
+        ax[2].errorbar(
+            Rthomson[tindThomson[i],booThomson[i]], 
+            neutralDensity0[i,booThomson[i]], 
+            yerr=neutral0Err[i,booThomson[i]], 
+            fmt='.', c='k', mfc='None', elinewidth=0.8, alpha=0.8, 
+        )
+        # ylim = [
+        #     np.max((n0[i,:Rind].min() / yMult, n0lim)), 
+        #     (n0[i,:Rind1+1] + n0Err[i,Rind1+1]).max() * yMult
+        # ]
         ylim = [
             np.max((n0[i,:Rind].min() / yMult, n0lim)), 
-            (n0[i,:Rind1+1] + n0Err[i,Rind1+1]).max() * yMult
+            2e18
         ]
-        ax[2].plot(xlim, [n0Max[i],n0Max[i]], '-', c='C0', lw=0.8)
-        ax[2].plot(
-            [n0MaxR[i],n0MaxR[i]], [ylim[0],n0Max[i]], '-', c='C0', lw=0.8
-        )
-        ax[2].text(
-            n0MaxR[i], n0Max[i], 
-            f'{n0MaxR[i]:.3f}m\n{n0Max[i]:.2g}m$^{{-3}}$', 
-            c='C0', fontsize=8, ha='right', va='top'
-        )
+        ax[2].plot(xlim, [n0Max[i],n0Max[i]], '--', c='k', lw=0.8, zorder=1)
+        ax[2].plot(xlim, [n0sep[i],n0sep[i]], '--', c='C7', lw=0.8, zorder=1)
+        ax[2].plot([n0MaxR[i],n0MaxR[i]], ylim, '--', c='k', lw=0.8, zorder=1)
+        # ax[2].plot(xlim, [n0Max[i],n0Max[i]], '-', c='C0', lw=0.8)
+        # ax[2].plot(
+        #     [n0MaxR[i],n0MaxR[i]], [ylim[0],n0Max[i]], '-', c='C0', lw=0.8
+        # )
+        # ax[2].text(
+        #     n0MaxR[i], n0Max[i], 
+        #     f'{n0MaxR[i]:.3f}m\n{n0Max[i]:.2g}m$^{{-3}}$', 
+        #     c='C0', fontsize=8, ha='right', va='top'
+        # )
 
-        yVal = n0Max[i] * np.exp(-1.)
-        ax[2].plot([xlim[0],n0R1[i]], [yVal,yVal], '-', c='C1', lw=0.8)
-        ax[2].plot([n0R1[i],n0R1[i]], [ylim[0],yVal], '-', c='C1', lw=0.8)
-        ax[2].text(
-            n0R1[i], yVal, 
-            f'{n0w1[i]*100.:.1f}$\\pm${n0w1err[i]*100.:.1f}cm', 
-            c='C1', fontsize=8, ha='right', va='top'
-        )
-        ax[2].plot([n0R1A[i],xlim[1]], [yVal,yVal], '--', c='C1', lw=0.8)
-        ax[2].plot([n0R1A[i],n0R1A[i]], [ylim[0],yVal], '--', c='C1', lw=0.8)
-        yVal = n0Max[i] * np.exp(-2.)
-        ax[2].plot([xlim[0],n0R2[i]], [yVal,yVal], '-', c='C3', lw=0.8)
-        ax[2].plot([n0R2[i],n0R2[i]], [ylim[0],yVal], '-', c='C3', lw=0.8)
-        ax[2].text(
-            n0R2[i], yVal, 
-            f'{n0w2[i]*100.:.1f}$\\pm${n0w2err[i]*100.:.1f}cm', 
-            c='C3', fontsize=8, ha='right', va='top'
-        )
-        ax[2].plot([n0R2A[i],xlim[1]], [yVal,yVal], '--', c='C3', lw=0.8)
-        ax[2].plot([n0R2A[i],n0R2A[i]], [ylim[0],yVal], '--', c='C3', lw=0.8)
-        yVal = n0Max[i] * np.exp(-3.)
-        ax[2].plot([xlim[0],n0R3[i]], [yVal,yVal], '-', c='C4', lw=0.8)
-        ax[2].plot([n0R3[i],n0R3[i]], [ylim[0],yVal], '-', c='C4', lw=0.8)
-        ax[2].text(
-            n0R3[i], yVal, 
-            f'{n0w3[i]*100.:.1f}$\\pm${n0w3err[i]*100.:.1f}cm', 
-            c='C4', fontsize=8, ha='right', va='top'
-        )
-        ax[2].plot([n0R3A[i],xlim[1]], [yVal,yVal], '--', c='C4', lw=0.8)
-        ax[2].plot([n0R3A[i],n0R3A[i]], [ylim[0],yVal], '--', c='C4', lw=0.8)
+        # yVal = n0Max[i] * np.exp(-1.)
+        # ax[2].plot([xlim[0],n0R1[i]], [yVal,yVal], '-', c='C1', lw=0.8)
+        # ax[2].plot([n0R1[i],n0R1[i]], [ylim[0],yVal], '-', c='C1', lw=0.8)
+        # ax[2].text(
+        #     n0R1[i], yVal, 
+        #     f'{n0w1[i]*100.:.1f}$\\pm${n0w1err[i]*100.:.1f}cm', 
+        #     c='C1', fontsize=8, ha='right', va='top'
+        # )
+        # ax[2].plot([n0R1A[i],xlim[1]], [yVal,yVal], '--', c='C1', lw=0.8)
+        # ax[2].plot([n0R1A[i],n0R1A[i]], [ylim[0],yVal], '--', c='C1', lw=0.8)
+        # yVal = n0Max[i] * np.exp(-2.)
+        # ax[2].plot([xlim[0],n0R2[i]], [yVal,yVal], '-', c='C3', lw=0.8)
+        # ax[2].plot([n0R2[i],n0R2[i]], [ylim[0],yVal], '-', c='C3', lw=0.8)
+        # ax[2].text(
+        #     n0R2[i], yVal, 
+        #     f'{n0w2[i]*100.:.1f}$\\pm${n0w2err[i]*100.:.1f}cm', 
+        #     c='C3', fontsize=8, ha='right', va='top'
+        # )
+        # ax[2].plot([n0R2A[i],xlim[1]], [yVal,yVal], '--', c='C3', lw=0.8)
+        # ax[2].plot([n0R2A[i],n0R2A[i]], [ylim[0],yVal], '--', c='C3', lw=0.8)
+        # yVal = n0Max[i] * np.exp(-3.)
+        # ax[2].plot([xlim[0],n0R3[i]], [yVal,yVal], '-', c='C4', lw=0.8)
+        # ax[2].plot([n0R3[i],n0R3[i]], [ylim[0],yVal], '-', c='C4', lw=0.8)
+        # ax[2].text(
+        #     n0R3[i], yVal, 
+        #     f'{n0w3[i]*100.:.1f}$\\pm${n0w3err[i]*100.:.1f}cm', 
+        #     c='C4', fontsize=8, ha='right', va='top'
+        # )
+        # ax[2].plot([n0R3A[i],xlim[1]], [yVal,yVal], '--', c='C4', lw=0.8)
+        # ax[2].plot([n0R3A[i],n0R3A[i]], [ylim[0],yVal], '--', c='C4', lw=0.8)
         ax[2].set_title('Neutral density', fontsize=9)
         ax[2].set_xlabel('$R$ (m)')
         ax[2].set_ylabel('$n_0$ (m$^{-3}$)')
@@ -250,46 +279,46 @@ def plotResults(
                 [ylim[1],ylim[1]], color='C3', alpha=0.1
             )
 
-        if neutralRatio is not None:
-            ax[2].text(
-                n0MaxR[i], n0Max[i], 
-                f'$n_{{0,\\mathrm{{fig}}}}$=\n{figN0[i]:.2g}m$^{{-3}}$\n' + \
-                f'$(n_0/n_e)_\\mathrm{{sep}}$=\n{neutralRatio[i]:.4f}', 
-                color='k', fontsize=8, va='top', ha='left'
-            )
-        elif figN0 is not None:
-            ax[2].text(
-                n0MaxR[i], n0Max[i], 
-                f'$n_{{0,\\mathrm{{fig}}}}$=\n{figN0[i]:.2g}m$^{{-3}}$\n', 
-                color='k', fontsize=8, va='top', ha='left'
-            )
+        # if neutralRatio is not None:
+        #     ax[2].text(
+        #         n0MaxR[i], n0Max[i], 
+        #         f'$n_{{0,\\mathrm{{fig}}}}$=\n{figN0[i]:.2g}m$^{{-3}}$\n' + \
+        #         f'$(n_0/n_e)_\\mathrm{{sep}}$=\n{neutralRatio[i]:.4f}', 
+        #         color='k', fontsize=8, va='top', ha='left'
+        #     )
+        # elif figN0 is not None:
+        #     ax[2].text(
+        #         n0MaxR[i], n0Max[i], 
+        #         f'$n_{{0,\\mathrm{{fig}}}}$=\n{figN0[i]:.2g}m$^{{-3}}$\n', 
+        #         color='k', fontsize=8, va='top', ha='left'
+        #     )
             
         for j in range(3):
             ax[j].set_xlim(xlim)
             ax[j].tick_params(
                 axis="both", which='both', labelsize=9, direction='in', 
-                left=True, bottom=True, right=True, top=top
+                left=True, bottom=True, right=True, top=True
             )
             ax[j].xaxis.set_minor_locator(AutoMinorLocator())
             if not top:
-                def forward(x):
-                    return np.interp(x, R, psiN[i])
-                def inverse(x):
-                    return np.interp(x, psiN[i], R)
+                # def forward(x):
+                #     return np.interp(x, R, psiN[i])
+                # def inverse(x):
+                #     return np.interp(x, psiN[i], R)
                 sepR = np.interp(1., psiN[i], R)
                 
-                secax = ax[j].secondary_xaxis(
-                    'top', functions=(forward, inverse)
-                )
-                secax.xaxis.set_minor_locator(AutoMinorLocator())
-                secax.set_xlabel('$\\Psi_\\mathrm{N}$')
-                secax.tick_params(
-                    axis="both", which='both', labelsize=9, direction='in', 
-                            left=False, bottom=False, right=False, top=True
-                )
-                secax.minorticks_on()
+                # secax = ax[j].secondary_xaxis(
+                #     'top', functions=(forward, inverse)
+                # )
+                # secax.xaxis.set_minor_locator(AutoMinorLocator())
+                # secax.set_xlabel('$\\Psi_\\mathrm{N}$')
+                # secax.tick_params(
+                #     axis="both", which='both', labelsize=9, direction='in', 
+                #             left=False, bottom=False, right=False, top=True
+                # )
+                # secax.minorticks_on()
                 ylim = ax[j].get_ylim()
-                ax[j].plot([sepR, sepR], ylim, '-k', lw=0.8, zorder=0)
+                ax[j].plot([sepR, sepR], ylim, '-', c='C7', lw=0.8, zorder=0)
         
         fig.suptitle(f't={time[i]:.4f}s', fontsize=10)
         plt.tight_layout()
@@ -396,7 +425,7 @@ if __name__ == "__main__":
             R, data[I:J], err[I:J], RgridB, emissivity[I:J], 
             emissivityErr[I:J], backprojection[I:J], time[I:J], emMaxR[I:J], 
             emMax[I:J], emR0[I:J], emR1[I:J], emFWHM[I:J], emFWHMerr[I:J], 
-            fills[I:J], savePath=savePathInversion, close=close
+            fills, savePath=savePathInversion, close=close
         )
         
     except KeyError:
@@ -447,6 +476,17 @@ if __name__ == "__main__":
         figN0 = results['figN0']
         psiN = results['psiN']
         neutralRatio = results['neutralRatio']
+        ######################################################
+        from mastu import HSV
+        shotn = int(resultsFile.split('/')[-2])
+        tindThomson = results['tindThomson']
+        booThomson = results['booThomson']
+        ioniseRate0 = results['ioniseRate0']
+        ionise0Err = results['ionise0Err']
+        neutralDensity0 = results['neutralDensity0']
+        neutral0Err = results['neutral0Err']
+        sepNeutralDensity = results['sepNeutralDensity']
+        Rthomson = HSV.getThomson(shotn, 'n_e')[-1]
 
         if t0 is None:
             I = 0
@@ -472,8 +512,11 @@ if __name__ == "__main__":
             neutralR3[I:J], neutralWidth1[I:J], neutralWidth1err[I:J], 
             neutralWidth2[I:J], neutralWidth2err[I:J], neutralWidth3[I:J], 
             neutralWidth3err[I:J], neutralR1A[I:J], neutralR2A[I:J], 
-            neutralR3A[I:J], RendThomson[I:J], time[I:J], fills[I:J], 
-            figN0=figN0[I:J], neutralRatio=neutralRatio[I:J], psiN=psiN[I:J], 
+            neutralR3A[I:J], RendThomson[I:J], time[I:J], fills, 
+            tindThomson[I:J], booThomson[I:J], Rthomson, ioniseRate0[I:J], 
+            ionise0Err[I:J], neutralDensity0[I:J], neutral0Err[I:J], 
+            sepNeutralDensity[I:J], figN0=figN0[I:J], 
+            neutralRatio=neutralRatio[I:J], psiN=psiN[I:J], 
             savePath=savePathResults, close=close
         )
         

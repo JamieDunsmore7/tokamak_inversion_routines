@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 from matplotlib.ticker import AutoMinorLocator
 from mastu import HSV
 import os
+from pyEquilibrium.equilibrium import equilibrium as equil
 from scipy import constants
 from scipy.optimize import curve_fit
 
@@ -17,9 +18,9 @@ from scipy.optimize import curve_fit
 
 
 ### shot number
-shotn = 51713
+shotn = 51706
 ### time range
-trange = [0.18,0.72]
+trange = [0.2,0.7]
 ### do I want to show the plots or not
 plot = False
 
@@ -94,19 +95,19 @@ neScale = 1e19
 
 fExcite, scaleExcite, fRecomb, scaleRecomb, fIonise, scaleIonise = fn.makeADAS(
     line='dalpha', excite='cubic', recomb='cubic', 
-    ionise='linear', bounds_error=False, fill_value=None
+    ionise='cubic', bounds_error=False, fill_value=None
 )
 fExcite2, scaleExcite2, fRecomb2, scaleRecomb2, fIonise2, scaleIonise2 = \
 fn.makeADAS(
     line='dalpha', excite='linear', recomb='linear', 
-    ionise='cubic', bounds_error=False, fill_value=None
+    ionise='linear', bounds_error=False, fill_value=None
 )
 
 
 ###############################################################################
 ###                             do the plotting                             ###
 ###############################################################################
-
+RpsiN = np.arange(1., 1.6, 1e-4)
 
 ### iterate over the times
 for i in range(0, len(time)):
@@ -182,6 +183,11 @@ for i in range(0, len(time)):
     TeMax = Te[i,rind:][np.isfinite(Te[i,rind:])].max()
     peMax = pe[i,rind:][np.isfinite(pe[i,rind:])].max()
     
+    ###
+    eq = equil(device='MASTU', shot=shotn, time=time[i])
+    psiN = eq.psiN(RpsiN, 0.)[0]
+    Rsep = np.interp(1., psiN, RpsiN)
+
     ### make the figure and axes
     fig, ax = plt.subplots(1, 3, figsize=(8,3.6), dpi=150)
     
@@ -234,12 +240,15 @@ for i in range(0, len(time)):
     ax[0].set_xlabel('$R$ (m)')
     ax[0].set_ylabel('$n_e$ (m$^{-3}$)')
     ax[0].set_ylim([0, neMax*yscale])
+    ax[0].plot([Rsep,Rsep], [0, neMax*yscale], '-', c='C7', lw=0.8, zorder=0)
     ax[1].set_xlabel('$R$ (m)')
     ax[1].set_ylabel('$T_e$ (eV)')
     ax[1].set_ylim([0, TeMax*yscale])
+    ax[1].plot([Rsep,Rsep], [0, TeMax*yscale], '-', c='C7', lw=0.8, zorder=0)
     ax[2].set_xlabel('$R$ (m)')
     ax[2].set_ylabel('$p_e$ (Pa)')
     ax[2].set_ylim([0, peMax*yscale])
+    ax[2].plot([Rsep,Rsep], [0, peMax*yscale], '-', c='C7', lw=0.8, zorder=0)
 
     ### do the fill between
     ax[0].fill_between(
@@ -290,10 +299,10 @@ for i in range(0, len(time)):
     ### plot the rates
     ax[0].plot(R, EXC, '-', c='C0', label='cubic')
     ax[1].plot(R, REC, '-', c='C1', label='cubic')
-    ax[2].plot(R, ION, '-', c='C2', label='linear')
+    ax[2].plot(R, ION, '-', c='C2', label='cubic')
     ax[0].plot(R, EXC2, ':', c='k', label='linear')
     ax[1].plot(R, REC2, ':', c='k', label='linear')
-    ax[2].plot(R, ION2, ':', c='k', label='cubic')
+    ax[2].plot(R, ION2, ':', c='k', label='linear')
 
     ### figure wide changes
     for j in range(0, 3):
@@ -306,6 +315,7 @@ for i in range(0, len(time)):
         ax[j].yaxis.set_minor_locator(AutoMinorLocator())
         ylim = ax[j].get_ylim()
         ax[j].set_ylim(ylim)
+        ax[j].plot([Rsep,Rsep], ylim, '-', c='C7', lw=0.8, zorder=0)
         ### do the fill between
         ax[j].fill_between(
             [xlim[0], R0], [ylim[0],ylim[0]], 

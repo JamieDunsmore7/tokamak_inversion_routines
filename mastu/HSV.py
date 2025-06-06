@@ -522,6 +522,31 @@ def getPedestal(shotn, kind, prefix='/apf/core/mtanh/lfs/', trange=[-1.,-1.]):
     return time[boo], R0[boo], height[boo], width[boo], grad[boo], bkgd[boo]
 
 
+def getPedestalSamples(
+    shotn, kind, prefix='/apf/core/mtanh/lfs/', trange=[-1.,-1.]
+    ):
+    time = client.get(prefix+'time', shotn).data
+    R0 = client.get(prefix+kind+'/pedestal_location_samples', shotn).data
+    height = client.get(prefix+kind+'/pedestal_height_samples', shotn).data
+    width = client.get(prefix+kind+'/pedestal_width_samples', shotn).data
+    grad = client.get(prefix+kind+'/pedestal_top_gradient_samples', shotn).data
+    bkgd = client.get(prefix+kind+'/background_level_samples', shotn).data
+    if (trange[0] == -1.) and (trange[1] == -1.):
+        boo = np.ones_like(time).astype(bool)
+    else:
+        boo = (time >= trange[0]) * (time <= trange[1])
+    return R0[boo], height[boo], width[boo], grad[boo], bkgd[boo]
+
+
+def makePedestalSamples(Rprofile, R0, height, width, grad, bkgd):
+    profiles = np.zeros((len(R0), len(Rprofile)))
+    for i in range(0, len(R0)):
+        profiles[i] = mtanh(
+            Rprofile, R0[i], height[i], width[i], grad[i], bkgd[i]
+        )
+    return profiles
+
+
 def getThomson(shotn, kind, prefix='/ayc/', trange=[-1.,-1.]):
     time = client.get(prefix+'time', shotn).data
     data = client.get(prefix+kind, shotn).data
@@ -634,6 +659,178 @@ def getMinorRadius(
     return minorRadius
 
 
+def getDalpha(shotn, sigName='/XIM/DA/HM10/T', trange=[-1.,-1.]):
+    
+    data = client.get(sigName, shotn)
+    time, sig = data.time.data, data.data
+    
+    if (trange[0] == -1.) and (trange[1] == -1.):
+        boo = np.ones_like(time).astype(bool)
+    
+    else:
+        boo = (time >= trange[0]) * (time <= trange[1])
+    
+    return time[boo], sig[boo]
+
+
+def processDalpha(
+    shotn, sigName='/XIM/DA/HM10/T', trange=[0.1,0.95], moving_av_length=1e-3, 
+    ):
+
+    ### return whole signal, chop down after processing
+    time, sig = getDalpha(shotn, sigName=sigName, trange=[-1.,-1.])
+    
+    n = int(moving_av_length / (time[1] - time[0]))
+    ret = np.cumsum(sig, dtype=float)
+    ret[n:] = ret[n:] - ret[:-n]
+    ret = ret[n - 1:] / n
+    sig[n-1:] -= ret
+
+    if (trange[0] == -1.) and (trange[1] == -1.):
+        boo = np.ones_like(time).astype(bool)
+    
+    else:
+        boo = (time >= trange[0]) * (time <= trange[1])
+    
+    return time[boo], sig[boo]
+
+
+def identify_bursts(series, thresh):#, analyse=False):
+    
+    inds_above_thresh = np.where(series>thresh)
+    inds_below_thresh = np.where(series<=thresh)
+    windows = [] 
+    leng = len(inds_above_thresh[0])+0.0
+    for i, ind in enumerate(inds_above_thresh[0]):
+        try:
+            #Extract highest possible index that occurs before a filement,
+            ind_low = np.extract(inds_below_thresh < ind,inds_below_thresh)[-1]
+            #Extract lowest possible index that occurs after a filemant
+            ind_up = np.extract(inds_below_thresh > ind,inds_below_thresh)[0]
+            if (ind_low,ind_up) not in windows:
+                #Make sure that there is no double counting
+                windows.append((ind_low,ind_up))
+        except:
+            pass
+    
+#     if analyse:
+#         N_bursts = len(windows)
+#         burst_ratio = len(list(series))/N_bursts
+#         av_window = np.mean([y - x for x,y in windows])
+#         return windows, N_bursts, burst_ratio, av_window
+#     else:
+#         return windows
+
+    return windows
+
+
+def detectELMs(
+    shotn, sigName='/XIM/DA/HM10/T', trange=[0.1,0.95], moving_av_length=1e-3, 
+    minDuration=5e-5, maxDuration=5e-2, minSeperation=2e-3, threshold=0.011, 
+    interval=2e-2, full=True, 
+    ):
+    
+    dtime, dalpha = processDalpha(
+        shotn, sigName=sigName, trange=trange, 
+        moving_av_length=moving_av_length, 
+    )
+    
+    orig_windows = identify_bursts(dalpha, threshold)#, analyse=False)
+
+
+    windows = orig_windows[:]
+    too_short_windows = []
+    too_long_windows = []
+    num_too_short = 0
+    num_too_long = 0
+    
+    for i in range(len(windows)):
+        if (dtime[windows[i][1]] - dtime[windows[i][0]]) < minDuration:
+            too_short_windows.append(windows[i])
+            windows[i] = (0,0)
+            num_too_short+=1
+        if (dtime[windows[i][1]] - dtime[windows[i][0]]) > maxDuration:
+            too_long_windows.append(windows[i])
+            windows[i] = (0,0)
+            num_too_long += 1
+            
+    windows = [x for x in windows if x!=(0,0)]
+    
+    too_short_inds = [
+        np.argmax(
+            dalpha[too_short_windows[x][0]:too_short_windows[x][1]]
+        ) + too_short_windows[x][0] for x in range(len(too_short_windows))
+    ]
+    too_long_inds = [
+        np.argmax(
+            dalpha[too_long_windows[x][0]:too_long_windows[x][1]]
+        ) + too_long_windows[x][0] for x in range(len(too_long_windows))
+    ]
+    
+    too_short = dalpha[too_short_inds]
+    too_short_t = dtime[too_short_inds]
+    
+    too_long = dalpha[too_long_inds]
+    too_long_t = dtime[too_long_inds]
+    
+    elm_inds = [
+        np.argmax(
+            dalpha[windows[x][0]:windows[x][1]]
+        ) + windows[x][0] for x in range(len(windows))
+    ]
+    elm_heights = dalpha[elm_inds]
+    elm_times = dtime[elm_inds]
+    
+    too_recurrent = 0
+    freq_filtered_inds = np.zeros(0, dtype=int)
+    for i in range(0, len(elm_inds)-1):
+        if (elm_heights[i] != 0) and (i not in freq_filtered_inds):
+            close_inds = np.where(
+                elm_times[i+1:] - elm_times[i] < minSeperation
+            )[0] + i + 1
+            freq_filtered_inds = np.concatenate((freq_filtered_inds, close_inds))
+    
+    freq_filtered_inds = np.unique(freq_filtered_inds)
+    too_recurrent = len(freq_filtered_inds)
+    freq_filtered_t = elm_times[freq_filtered_inds]
+    freq_filtered = elm_heights[freq_filtered_inds]
+    
+    elm_times[freq_filtered_inds] = 0
+    elm_heights[freq_filtered_inds] = 0
+    
+    elm_times = elm_times[np.where(elm_heights != 0)]
+    elm_heights = elm_heights[np.where(elm_heights != 0)]
+
+    num_elms = len(elm_heights)
+    
+    freq_t = np.linspace(
+        min(elm_times), max(elm_times), 
+        int((max(elm_times) - min(elm_times)) / interval)
+    )
+    freq = np.zeros(len(freq_t))
+    
+    for index, time in enumerate(freq_t):
+        num = len(
+            np.where(
+                (elm_times > time - interval / 2) & 
+                (elm_times < time + interval / 2)
+            )[0]
+        )
+        freq[index] = num / interval
+    
+    # dtime(alpha) - time (and signal) of the filtered d-alpha trace
+    # freq(_t) - time smoothed frequency
+    # freq_filtered(_t) - too close to another ELM
+    # too_short(_t) - too short a duration
+    # too_long(_t) - too long a duration
+    # elm_times(heights) - the time (and height) of the ELMs that made it through
+    
+    if full:
+        return dtime, dalpha, freq_t, freq, freq_filtered_t, freq_filtered, \
+        too_short_t, too_short, too_long_t, too_long, elm_times, elm_heights
+    
+    else:
+        return dtime, dalpha, elm_times, elm_heights
 
 #
     """

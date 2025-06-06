@@ -1,7 +1,7 @@
 {
     "shotn": 51705,
     "Rzfile": "/home/sthoma/tokamak_inversion_routines/mastu/Coordinates/51267_684.npz",
-    "maskFile": "/home/sthoma/tokamak_inversion_routines/mastu/Masks/51267_684_bigmask.npy",
+    "maskFile": "/home/sthoma/tokamak_inversion_routines/mastu/Masks/51267_684_bigmask_part2.npy",
 
 
     "I0": 244,
@@ -15,7 +15,7 @@
     "T1": 6150,
 
 
-    "saveFile": "rba_results.npz",
+    "saveFile": "rba_results_part2.npz",
 
 
     "photons": 1,
@@ -48,15 +48,15 @@
     "regGuess": 0.7,
     "regMin": 0.4,
 
-    "kindThomson": "fit",
     "Rprofile0": 1.25,
 
     "line": "dalpha",
     "kindExcite": "cubic",
     "kindRecomb": "cubic",
     "kindIonise": "linear",
-
-    "percent": 0.1,
+    "kindEmissivity": "quadratic",
+    "ni": 1.0,
+    "N": 100,
 
     "figTemp": 300.0
 }

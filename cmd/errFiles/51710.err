@@ -1,2 +1,12 @@
-/home/sthoma/tokamak_inversion_routines/mastu/HSV.py:493: RuntimeWarning: overflow encountered in exp
-  L = 1. / (1. + np.exp(-z))
+Traceback (most recent call last):
+  File "/home/sthoma/tokamak_inversion_routines/./neutrals.py", line 377, in <module>
+    eq = equil(device='MASTU', shot=shotn, time=time[i])
+  File "/home/sthoma/.local/lib/python3.9/site-packages/pyEquilibrium/equilibrium.py", line 194, in __init__
+    self.load_MASTU(shot, time, with_bfield=with_bfield, verbose=verbose, mastu_prefix=mastu_prefix)
+  File "/home/sthoma/.local/lib/python3.9/site-packages/pyEquilibrium/equilibrium.py", line 656, in load_MASTU
+    all_times = client.get('/{}/time'.format(mastu_prefix), source).data
+  File "/usr/local/depot/uda-2.6.1/python/pyuda/_client.py", line 171, in get
+    return self._unpack(result, time_first, time_last)
+  File "/usr/local/depot/uda-2.6.1/python/pyuda/_client.py", line 120, in _unpack
+    raise cpyuda.ServerException(result.error_message().decode())
+cpyuda.ServerException: Data Status is BAD ... Data are Not Usable!

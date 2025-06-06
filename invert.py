@@ -2,7 +2,7 @@
 
 ### author: Steven Thomas
 ### email:  steven.thomas@ukaea.uk; sthoma@mit.edu
-invert_version = '2.2.0'
+invert_version = '3.0.1'
 
 
 import functions as fn
@@ -64,7 +64,7 @@ regGuess = inputDict['regGuess']
 regMin = inputDict['regMin']
 
 ### use pedestal fitting or raw Thomson
-kindThomson = inputDict['kindThomson']
+# kindThomson = inputDict['kindThomson']
 ### R value pedestal fitting works up to
 Rprofile0 = inputDict['Rprofile0']
 
@@ -73,9 +73,13 @@ line = inputDict['line']
 kindExcite = inputDict['kindExcite']
 kindRecomb = inputDict['kindRecomb']
 kindIonise = inputDict['kindIonise']
+### for calcualting ionisation rate and neutral density
+kindEmissivity = 'quadratic'
+ni = 1.
+N = 100
 
 ### using a constant percentage for profile error
-percent = inputDict['percent']
+# percent = inputDict['percent']
 
 ### temperature to assume for neutral density from fig
 figTemp = inputDict['figTemp']
@@ -178,6 +182,7 @@ gamma = np.zeros(nT)
 backprojection = np.zeros((nT, nR))
 ### empty arrays for measurements of the emissivity profile
 emMax = np.zeros(nT)
+emMaxErr = np.zeros(nT)
 emMaxR = np.zeros(nT)
 emR0 = np.zeros(nT)
 emR1 = np.zeros(nT)
@@ -210,6 +215,7 @@ for i in range(nT):
 
     ### find the emissivity maximum and location
     emMax[i] = emissivity[i][Rind:].max()
+    emMaxErr[i] = emissivityErr[i][emissivity[i][Rind:].argmax()]
     emMaxR[i] = Rprofile[emissivity[i][Rind:].argmax()]
 
     ### calculate the emissivity FWHM
@@ -249,6 +255,7 @@ if saveFile:
         backprojection = backprojection,
         scale = scale,
         emMax = emMax,
+        emMaxErr = emMaxErr,
         emMaxR = emMaxR,
         emR0 = emR0,
         emR1 = emR1,
