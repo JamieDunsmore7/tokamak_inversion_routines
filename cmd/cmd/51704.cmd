@@ -1,4 +1,4 @@
-# @ executable = neutrals.py /home/sthoma/Documents/Results/rba/51704/rba_results_part2_invert_1.txt
+# @ executable = plotFunctions.py /home/sthoma/Documents/Results/rba/51704/rba_results_final_neutral.npz
 # @ max_processors = 2
 # @ min_processors = 1
 # @ input = /dev/null

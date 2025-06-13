@@ -426,10 +426,10 @@ def neutrals0(
     
     ### interpolate the emissivity
     emissivityInt = interp1d(
-        Rprofile, emissivity, kind=kind
+        Rprofile, emissivity, kind=kind, bounds_error=False, fill_value='extrapolate'
     )(Rthomson)
     emissivityErrInt = interp1d(
-        Rprofile, emissivityErr, kind=kind
+        Rprofile, emissivityErr, kind=kind, bounds_error=False, fill_value='extrapolate'
     )(Rthomson)
 
     ### make the rate coefficients

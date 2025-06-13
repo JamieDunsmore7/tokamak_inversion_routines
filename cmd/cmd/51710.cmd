@@ -1,4 +1,4 @@
-# @ executable = neutrals.py /home/sthoma/Documents/Results/rba/51710/rba_results_part2_invert_1.txt
+# @ executable = neutrals.py /home/sthoma/Documents/Results/rba/51710/rba_results_final_invert.txt
 # @ max_processors = 2
 # @ min_processors = 1
 # @ input = /dev/null

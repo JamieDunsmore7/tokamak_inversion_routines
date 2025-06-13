@@ -201,7 +201,15 @@ def plotResults(
                 [ylim[1],ylim[1]], color='C3', alpha=0.1
             )
         ax[1].yaxis.set_minor_locator(AutoMinorLocator())
+        ax[1].plot(
+            [emMaxR[i], emMaxR[i]], ylim, '-', c='C0', lw=0.8, zorder=-1
+        )
+        r = findNearest(R, emMaxR[i])
+        ax[1].plot(
+            xlim, [Siz[i,r]/1e21,Siz[i,r]/1e21], '-', c='C0', lw=0.8, zorder=-1
+        )
         
+
         ax[2].plot(R, n0[i], '-', c='C2', mfc='None')
         ax[2].fill_between(
             R, n0[i]-n0Err[i], n0[i]+n0Err[i], color='C2', alpha=0.3
@@ -278,6 +286,13 @@ def plotResults(
                 fills[j], [ylim[0],ylim[0]], 
                 [ylim[1],ylim[1]], color='C3', alpha=0.1
             )
+        ax[2].plot(
+            [emMaxR[i], emMaxR[i]], ylim, '-', c='C0', lw=0.8, zorder=-1
+        )
+        r = findNearest(R, emMaxR[i])
+        ax[2].plot(
+            xlim, [n0[i,r],n0[i,r]], '-', c='C0', lw=0.8, zorder=-1
+        )
 
         # if neutralRatio is not None:
         #     ax[2].text(
